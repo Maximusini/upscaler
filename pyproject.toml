@@ -1,0 +1,28 @@
+[project]
+name = "upscaler"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "Maximusin",email = "maxim.maxim.talankin@gmail.com"}
+]
+readme = "README.md"
+requires-python = ">=3.12, <3.15"
+dependencies = [
+    "opencv-python (>=4.12.0.88,<5.0.0.0)",
+    "numpy (<2.3.0)",
+    "torch (>=2.6.0,<3.0.0)",
+    "torchvision (>=0.21.0,<0.22.0)",
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[[tool.poetry.source]]
+name = "pytorch_cu124"
+url = "https://download.pytorch.org/whl/cu124"
+priority = "explicit"
+[tool.poetry.dependencies]
+torch = {source = "pytorch_cu124"}
+torchvision = {source = "pytorch_cu124"}

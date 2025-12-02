@@ -6,7 +6,7 @@ class VideoUpscaler:
     def __init__(self, upscaler):
         self.upscaler = upscaler
         
-    def process_video(self, input_path:str, output_path:str):
+    def process_video(self, input_path:str, output_path:str, progress=None):
         video = cv2.VideoCapture(input_path)
         
         fps = video.get(cv2.CAP_PROP_FPS)
@@ -27,6 +27,10 @@ class VideoUpscaler:
             current_frame += 1
             if (current_frame % 10) == 0:
                 print(f'Обработано ', current_frame, '/', frame_count)
+
+            if progress != None:
+                percent = int(current_frame / frame_count * 100)
+                progress(percent)
                 
             if not ret:
                 print('Видео закончилось.')

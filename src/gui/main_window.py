@@ -1,9 +1,6 @@
 import os
-import cv2
-from PySide6.QtWidgets import QWidget, QMainWindow, QVBoxLayout, QPushButton, QLabel, QComboBox, QFileDialog
-
-from src.core.upscaler import Upscaler
-from src.core.video import VideoUpscaler
+from PySide6.QtWidgets import QWidget, QMainWindow, QVBoxLayout, QPushButton, QLabel, QComboBox, QFileDialog, QProgressBar
+from src.gui.worker import UpscaleWorker
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -37,6 +34,11 @@ class MainWindow(QMainWindow):
         self.btn_start.setEnabled(False)
         self.btn_start.clicked.connect(self.start_processing)
         layout.addWidget(self.btn_start)
+        
+        self.progress_bar = QProgressBar()
+        self.progress_bar.setRange(0, 100)
+        self.progress_bar.setValue(0)
+        layout.addWidget(self.progress_bar)
     
     def select_file(self):
         file_path, _ = QFileDialog.getOpenFileName(self, 'Выберите файл', '', 'Images & Video (*.jpg *.png *.mp4)')
@@ -47,30 +49,26 @@ class MainWindow(QMainWindow):
             self.label_status.setText(f'Выбран файл: {file_name}')
             self.btn_start.setEnabled(True)
             
+    def update_status(self, text):
+        self.label_status.setText(text)
+        
+    def process_finished(self):
+        self.btn_start.setEnabled(True)
+    
+    def update_progress(self, percent):
+        self.progress_bar.setValue(percent)
+    
     def start_processing(self):
         self.btn_start.setEnabled(False)
-        self.label_status.setText('Обработка...')
+        self.progress_bar.setValue(0)
         
+        input_path = self.input_path
         model_choice = self.combo_model.currentText()
-        if model_choice == 'x2':
-            model_path='weights/RealESRGAN_x2plus.pth'
-            scale=2
-        else:
-            model_path='weights/RealESRGAN_x4plus.pth'
-            scale=4
         
-        root, ext = os.path.splitext(self.input_path)
-        output_path = f'{root}_upscaled{ext}'
+        self.worker = UpscaleWorker(input_path, model_choice)
         
-        upscaler = Upscaler(model_path=model_path, scale=scale)
+        self.worker.log_signal.connect(self.update_status)
+        self.worker.finished_signal.connect(self.process_finished)
+        self.worker.progress_signal.connect(self.update_progress)
         
-        if ext.lower() in ['.mp4', '.avi', '.mov']:
-            video_upscaler = VideoUpscaler(upscaler)
-            res = video_upscaler.process_video(input_path=self.input_path, output_path=output_path)
-        else:
-            img = cv2.imread(self.input_path)
-            res = upscaler.process_image(img)
-            cv2.imwrite(output_path, res)
-        
-        self.label_status.setText(f'Готово! Сохранено: {os.path.basename(output_path)}')
-        self.btn_start.setEnabled(True)
+        self.worker.start()

@@ -7,10 +7,12 @@ sys.path.append(project_root)
 
 from PySide6.QtWidgets import QApplication
 from src.gui.main_window import MainWindow
+from qt_material import apply_stylesheet
 
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
+    apply_stylesheet(app, theme='dark_blue.xml')
 
     window = MainWindow()
     window.show()

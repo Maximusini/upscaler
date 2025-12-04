@@ -653,6 +653,21 @@ files = [
 shiboken6 = "6.10.1"
 
 [[package]]
+name = "qt-material"
+version = "2.17"
+description = "Material inspired stylesheet for PySide6 and PyQt6."
+optional = false
+python-versions = ">=3.7"
+groups = ["main"]
+files = [
+    {file = "qt_material-2.17-py3-none-any.whl", hash = "sha256:660523341ae45b79d222bf15e202ec76ba3bf5e7e82170b66759738d7bb4873d"},
+    {file = "qt_material-2.17.tar.gz", hash = "sha256:b500a0c1f5ef8f46a8cf037d1aa5bdf9ea4eb618180b6332539dfbdd0647ad0d"},
+]
+
+[package.dependencies]
+Jinja2 = "*"
+
+[[package]]
 name = "setuptools"
 version = "80.9.0"
 description = "Easily download, build, install, upgrade, and uninstall Python packages"
@@ -829,4 +844,4 @@ files = [
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12, <3.15"
-content-hash = "95fa334b9202d3d2a9195d35722f5927d8de3a42867e9739e5070afa0ea6041f"
+content-hash = "4cf64818c9959119bda9c92cb543936d66d87aae035eacbd8034116b9fa3bb1d"

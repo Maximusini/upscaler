@@ -9,10 +9,11 @@ class UpscaleWorker(QThread):
     log_signal = Signal(str)
     progress_signal = Signal(int)
     
-    def __init__(self, input_path, model_choice):
+    def __init__(self, input_path, model_choice, output_path):
         super().__init__()
         self.input_path = input_path
         self.model_choice = model_choice
+        self.output_path = output_path
     
     def report_progress(self, percent):
         self.progress_signal.emit(percent)
@@ -28,18 +29,17 @@ class UpscaleWorker(QThread):
             scale=4
             
         root, ext = os.path.splitext(self.input_path)
-        output_path = f'{root}_upscaled{ext}'
         
         upscaler = Upscaler(model_path=model_path, scale=scale)
         self.log_signal.emit('Обработка...')
         
         if ext.lower() in ['.mp4', '.avi', '.mov']:
             video_upscaler = VideoUpscaler(upscaler)
-            res = video_upscaler.process_video(self.input_path, output_path, self.report_progress)
+            res = video_upscaler.process_video(self.input_path, self.output_path, self.report_progress)
         else:
             img = cv2.imread(self.input_path)
             res = upscaler.process_image(img)
-            cv2.imwrite(output_path, res)
+            cv2.imwrite(self.output_path, res)
         
         self.log_signal.emit('Обработка завершена! Файл сохранён.')
         self.finished_signal.emit()

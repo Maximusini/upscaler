@@ -50,7 +50,7 @@ class MainWindow(QMainWindow):
         controls_layout.addStretch()
         
         self.image = ComparisonWidget()
-        self.image.setStyleSheet("border: 2px dashed grey;")
+        self.image.setStyleSheet('border: 2px dashed grey;')
         image_layout.addWidget(self.image)
         
         main_layout.addLayout(controls_layout)
@@ -89,12 +89,20 @@ class MainWindow(QMainWindow):
         self.progress_bar.setValue(0)
         
         root, ext = os.path.splitext(self.input_path)
-        self.output_path = f'{root}_upscaled{ext}'
+        suggested_path = f'{root}_upscaled{ext}'
+        
+        file_path, _ = QFileDialog.getSaveFileName(self, 'Сохранить результат', suggested_path, 'Images (*.png *.jpg);;Video (*.mp4)')
+        
+        if not file_path:
+            self.btn_start.setEnabled(True)
+            return
+        else:
+            self.output_path = file_path
         
         input_path = self.input_path
         model_choice = self.combo_model.currentText()
         
-        self.worker = UpscaleWorker(input_path, model_choice)
+        self.worker = UpscaleWorker(input_path, model_choice, self.output_path)
         
         self.worker.log_signal.connect(self.update_status)
         self.worker.finished_signal.connect(self.process_finished)

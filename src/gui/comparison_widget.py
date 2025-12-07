@@ -54,18 +54,20 @@ class ComparisonWidget(QWidget):
         
     def mouseMoveEvent(self, event):
         x = event.x()
+        if self.before:
+            target_rect = self.target_rect(self.before)
         
-        if abs(self.slider_x - event.x()) < 15:
-            self.setCursor(Qt.SplitHCursor)
-        else:
-            self.setCursor(Qt.ArrowCursor)
-        
-        if self.is_dragging == True:
-            self.slider_x = x
-            self.slider_x = max(0, min(x, self.width()))
-            self.update()
-        else:
-            pass
+            if abs(self.slider_x - x) < 15:
+                self.setCursor(Qt.SplitHCursor)
+            else:
+                self.setCursor(Qt.ArrowCursor)
+            
+            if self.is_dragging == True:
+                self.slider_x = x
+                self.slider_x = max(target_rect.left(), min(x, target_rect.right()))
+                self.update()
+            else:
+                pass
         
     def mousePressEvent(self, event):
         if abs(self.slider_x - event.x()) < 15:

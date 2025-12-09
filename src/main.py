@@ -1,5 +1,6 @@
 import sys
 import os
+from PySide6.QtGui import QImageReader
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.dirname(current_dir)
@@ -12,6 +13,7 @@ from qt_material import apply_stylesheet
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
+    QImageReader.setAllocationLimit(0)
     apply_stylesheet(app, theme='dark_blue.xml')
 
     window = MainWindow()

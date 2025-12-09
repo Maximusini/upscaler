@@ -30,7 +30,8 @@ class VideoUpscaler:
 
             if progress != None:
                 percent = int(current_frame / frame_count * 100)
-                progress(percent)
+                if progress(percent) is False:
+                    break
                 
             if not ret:
                 print('Видео закончилось.')

@@ -49,6 +49,11 @@ class MainWindow(QMainWindow):
         self.btn_save.clicked.connect(self.save_result)
         controls_layout.addWidget(self.btn_save)
         
+        self.btn_stop = QPushButton('Стоп')
+        self.btn_stop.setEnabled(False)
+        self.btn_stop.clicked.connect(self.stop_processing)
+        controls_layout.addWidget(self.btn_stop)
+        
         self.progress_bar = QProgressBar()
         self.progress_bar.setRange(0, 100)
         self.progress_bar.setValue(0)
@@ -86,18 +91,13 @@ class MainWindow(QMainWindow):
             
     def update_status(self, text):
         self.label_status.setText(text)
-        
-    def process_finished(self):
-        self.btn_start.setEnabled(True)
-        self.btn_save.setEnabled(True)
-        if self.temp_output_path and not self.temp_output_path.endswith('.mp4'):
-            self.image.set_images(self.input_path, self.temp_output_path)
     
     def update_progress(self, percent):
         self.progress_bar.setValue(percent)
     
     def start_processing(self):
         self.btn_start.setEnabled(False)
+        self.btn_stop.setEnabled(True)
         self.progress_bar.setValue(0)
         
         root, ext = os.path.splitext(self.input_path)
@@ -115,8 +115,26 @@ class MainWindow(QMainWindow):
         self.worker.log_signal.connect(self.update_status)
         self.worker.finished_signal.connect(self.process_finished)
         self.worker.progress_signal.connect(self.update_progress)
+        self.worker.stopped_signal.connect(self.process_stopped)
         
         self.worker.start()
+        
+    def process_finished(self):
+        self.btn_start.setEnabled(True)
+        self.btn_stop.setEnabled(False)
+        self.btn_save.setEnabled(True)
+        if self.temp_output_path and not self.temp_output_path.endswith('.mp4'):
+            self.image.set_images(self.input_path, self.temp_output_path)
+            
+    def stop_processing(self):
+        self.worker.requestInterruption()
+        self.label_status.setText('Останавливаю...')
+        
+    def process_stopped(self):
+        self.btn_start.setEnabled(True)
+        self.btn_stop.setEnabled(False)
+        self.btn_save.setEnabled(False)
+        self.label_status.setText('Отменено.')
         
     def save_result(self):
         root, ext = os.path.splitext(self.input_path)

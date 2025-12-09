@@ -8,6 +8,7 @@ class UpscaleWorker(QThread):
     finished_signal = Signal()
     log_signal = Signal(str)
     progress_signal = Signal(int)
+    stopped_signal = Signal()
     
     def __init__(self, input_path, model_choice, output_path):
         super().__init__()
@@ -17,6 +18,7 @@ class UpscaleWorker(QThread):
     
     def report_progress(self, percent):
         self.progress_signal.emit(percent)
+        return not self.isInterruptionRequested()
         
     def run(self):
         self.log_signal.emit('Загрузка нейросети...')
@@ -41,6 +43,9 @@ class UpscaleWorker(QThread):
             res = upscaler.process_image(img)
             cv2.imwrite(self.output_path, res)
         
-        self.log_signal.emit('Обработка завершена! Можете сохранить файл.')
-        self.finished_signal.emit()
-        
+        if self.isInterruptionRequested():
+            self.log_signal.emit('Обработка остановлена.')
+            self.stopped_signal.emit()
+        else:
+            self.log_signal.emit('Обработка завершена! Можете сохранить файл.')
+            self.finished_signal.emit()

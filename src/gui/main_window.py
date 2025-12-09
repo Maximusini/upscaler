@@ -57,6 +57,7 @@ class MainWindow(QMainWindow):
         controls_layout.addStretch()
         
         self.image = ComparisonWidget()
+        self.image.file_dropped.connect(self.load_file)
         self.image.setStyleSheet('border: 2px dashed grey;')
         image_layout.addWidget(self.image)
         
@@ -64,10 +65,8 @@ class MainWindow(QMainWindow):
         main_layout.addLayout(image_layout)
         main_layout.setStretch(0, 1)
         main_layout.setStretch(1, 3)
-    
-
-    def select_file(self):
-        file_path, _ = QFileDialog.getOpenFileName(self, 'Выберите файл', '', 'Images & Video (*.jpg *.png *.mp4)')
+                
+    def load_file(self, file_path):
         root, ext = os.path.splitext(file_path)
         if file_path:
             if ext.lower() in ['.mp4', '.avi', '.mov']:
@@ -80,6 +79,10 @@ class MainWindow(QMainWindow):
                 self.label_status.setText(f'Выбран файл: {file_name}')
                 self.btn_start.setEnabled(True)
                 self.btn_save.setEnabled(False)
+                
+    def select_file(self):
+        file_path, _ = QFileDialog.getOpenFileName(self, 'Выберите файл', '', 'Images & Video (*.jpg *.png *.mp4)')
+        self.load_file(file_path)
             
     def update_status(self, text):
         self.label_status.setText(text)
@@ -129,4 +132,3 @@ class MainWindow(QMainWindow):
         if self.temp_output_path and os.path.exists(self.temp_output_path):
             os.remove(self.temp_output_path)
         event.accept()
-                

@@ -41,6 +41,6 @@ class UpscaleWorker(QThread):
             res = upscaler.process_image(img)
             cv2.imwrite(self.output_path, res)
         
-        self.log_signal.emit('Обработка завершена! Файл сохранён.')
+        self.log_signal.emit('Обработка завершена! Можете сохранить файл.')
         self.finished_signal.emit()
         

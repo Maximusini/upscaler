@@ -1,11 +1,14 @@
 from PySide6.QtWidgets import QWidget
 from PySide6.QtGui import QPainter, QPixmap, QColor, QPen
-from PySide6.QtCore import Qt, QRect
+from PySide6.QtCore import Qt, QRect, Signal
 
 class ComparisonWidget(QWidget):
+    file_dropped = Signal(str)
+    
     def __init__(self):
         super().__init__()
         self.setMouseTracking(True)
+        self.setAcceptDrops(True)
         
         self.before = None
         self.after = None
@@ -95,3 +98,16 @@ class ComparisonWidget(QWidget):
         offset_x = int((w_widget - new_w) / 2)
         offset_y = int((h_widget - new_h) / 2)
         return QRect(offset_x, offset_y, new_w, new_h)
+    
+    def dragEnterEvent(self, event):
+        if event.mimeData().hasUrls():
+            event.accept()
+        else:
+            event.ignore()
+    
+    def dropEvent(self, event):
+        files = event.mimeData().urls()
+        if files:
+            file_path = files[0].toLocalFile()
+            self.file_dropped.emit(file_path)
+        

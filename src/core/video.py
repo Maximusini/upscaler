@@ -18,7 +18,7 @@ class VideoUpscaler:
         final_width = width * self.upscaler.scale
         
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-        out = cv2.VideoWriter('temp.mp4', fourcc, fps, (final_width, final_height))
+        out = cv2.VideoWriter('temp_silent.mp4', fourcc, fps, (final_width, final_height))
         
         current_frame = 0
         while video.isOpened():
@@ -41,7 +41,7 @@ class VideoUpscaler:
         video.release()
         out.release()
                 
-        merge_audio('temp.mp4', input_path, output_path)
+        merge_audio('temp_silent.mp4', input_path, output_path)
         
-        os.remove('temp.mp4')
+        os.remove('temp_silent.mp4')
         

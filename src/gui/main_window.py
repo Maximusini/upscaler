@@ -78,6 +78,7 @@ class MainWindow(QMainWindow):
     def load_file(self, file_path):
         ext = os.path.splitext(file_path)[1].lower()
         if file_path:
+            self.btn_save.setEnabled(False)
             self.input_path = file_path
             if ext in self.VIDEO_EXTS:
                 self.label_status.setText('Видео выбрано (предпросмотр не доступен).')

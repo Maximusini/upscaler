@@ -3,6 +3,7 @@ import cv2
 from PySide6.QtCore import QThread, Signal
 from src.core.upscaler import Upscaler
 from src.core.video import VideoUpscaler
+from src.core.io_utils import read_image, save_image
 
 class UpscaleWorker(QThread):
     finished_signal = Signal()
@@ -39,9 +40,9 @@ class UpscaleWorker(QThread):
             video_upscaler = VideoUpscaler(upscaler)
             res = video_upscaler.process_video(self.input_path, self.output_path, self.report_progress)
         else:
-            img = cv2.imread(self.input_path)
+            img = read_image(self.input_path)
             res = upscaler.process_image(img)
-            cv2.imwrite(self.output_path, res)
+            save_image(self.output_path, res)
         
         if self.isInterruptionRequested():
             self.log_signal.emit('Обработка остановлена.')

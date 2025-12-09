@@ -1,5 +1,6 @@
 import torch
 import numpy as np
+import cv2
 
 from src.core.model_arch import RRDBNet
 
@@ -39,6 +40,17 @@ class Upscaler:
                 x_end = min(w, j + tile_pad + tile_size)
                 
                 img_patch = img[y_start:y_end, x_start:x_end, :]
+                pad_h = 0
+                pad_w = 0
+                h_patch, w_patch = img_patch.shape[:2]
+                
+                if h_patch % 2 != 0:
+                    pad_h = 1
+                if w_patch % 2 != 0:
+                    pad_w = 1
+                
+                if pad_h > 0 or pad_w > 0:
+                    img_patch = cv2.copyMakeBorder(img_patch, 0, pad_h, 0, pad_w, cv2.BORDER_REFLECT_101)
                 img_patch = img_patch.astype(np.float32) / 255.0
                 img_patch = np.transpose(img_patch[:, :, [2, 1, 0]], (2, 0, 1))
                 img_patch = torch.from_numpy(img_patch).float()

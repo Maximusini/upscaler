@@ -9,6 +9,10 @@ from src.gui.comparison_widget import ComparisonWidget
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
+        
+        self.VIDEO_EXTS = {'.mp4', '.avi', '.mov', '.mkv', '.webm'}
+        self.IMAGE_EXTS = {'.jpg', '.jpeg', '.png', '.bmp', '.webp'}
+        
         self.setup_ui()
         
         self.input_path = None
@@ -72,18 +76,19 @@ class MainWindow(QMainWindow):
         main_layout.setStretch(1, 3)
                 
     def load_file(self, file_path):
-        root, ext = os.path.splitext(file_path)
+        ext = os.path.splitext(file_path)[1].lower()
         if file_path:
-            if ext.lower() in ['.mp4', '.avi', '.mov']:
-                self.label_status.setText('Видео выбрано (предпросмотр недоступен)')
-            else:
-                self.input_path = file_path
-                self.image.set_images(self.input_path, None)
-                
-                file_name = os.path.basename(file_path)
-                self.label_status.setText(f'Выбран файл: {file_name}')
+            self.input_path = file_path
+            if ext in self.VIDEO_EXTS:
+                self.label_status.setText('Видео выбрано (предпросмотр не доступен).')
                 self.btn_start.setEnabled(True)
-                self.btn_save.setEnabled(False)
+            elif ext in self.IMAGE_EXTS:
+                self.image.set_images(file_path, None)
+                self.label_status.setText(f'Выбран файл: {os.path.basename(file_path)}.')
+                self.btn_start.setEnabled(True)
+            else:
+                self.label_status.setText('Ошибка. Данный формат не поддерживается.')
+                self.btn_start.setEnabled(False)
                 
     def select_file(self):
         file_path, _ = QFileDialog.getOpenFileName(self, 'Выберите файл', '', 'Images & Video (*.jpg *.png *.mp4)')
@@ -123,8 +128,10 @@ class MainWindow(QMainWindow):
         self.btn_start.setEnabled(True)
         self.btn_stop.setEnabled(False)
         self.btn_save.setEnabled(True)
-        if self.temp_output_path and not self.temp_output_path.endswith('.mp4'):
-            self.image.set_images(self.input_path, self.temp_output_path)
+        if self.temp_output_path:
+            ext = os.path.splitext(self.temp_output_path)[1].lower()
+            if ext not in self.VIDEO_EXTS:
+                self.image.set_images(self.input_path, self.temp_output_path)
             
     def stop_processing(self):
         self.worker.requestInterruption()

@@ -86,6 +86,7 @@ class ComparisonWidget(QWidget):
                 self.offset_x += delta.x()
                 self.offset_y += delta.y()
                 self.last_mouse_pos = event.pos()
+                self.constrain_offset()
                 self.update()
             else:
                 self.setCursor(Qt.ArrowCursor)
@@ -142,15 +143,38 @@ class ComparisonWidget(QWidget):
         else:
             self.zoom /= 1.1
         self.zoom = max(0.1, min(self.zoom, 10.0))
+        self.constrain_offset()
         self.update()
+        
+    def get_zoomed_size(self, rect):
+        final_w = rect.width() * self.zoom
+        final_h = rect.height() * self.zoom
+
+        return final_w, final_h
         
     def get_final_rect(self):
         base_rect = self.target_rect(self.before)
-        
-        final_w = base_rect.width() * self.zoom
-        final_h = base_rect.height() * self.zoom
+        final_w, final_h = self.get_zoomed_size(base_rect)
         
         final_x = base_rect.x() + self.offset_x - (final_w - base_rect.width()) / 2
         final_y = base_rect.y() + self.offset_y - (final_h - base_rect.height()) / 2
         
         return QRect(int(final_x), int(final_y), int(final_w), int(final_h))
+    
+    def constrain_offset(self):
+        base_rect = self.target_rect(self.before)
+        final_w, final_h = self.get_zoomed_size(base_rect)
+        widget_w = self.width()
+        widget_h = self.height()
+        
+        if final_w <= widget_w:
+            self.offset_x = 0
+        else:
+            max_offset_x = (final_w - widget_w) / 2
+            self.offset_x = max(-max_offset_x, min(self.offset_x, max_offset_x))
+            
+        if final_h <= widget_h:
+            self.offset_y = 0
+        else:
+            max_offset_y = (final_h - widget_h) / 2
+            self.offset_y = max(-max_offset_y, min(self.offset_y, max_offset_y))    

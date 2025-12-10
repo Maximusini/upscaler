@@ -97,9 +97,9 @@ class ComparisonWidget(QWidget):
             visual_slider_x = int(zoomed_rect.left() + zoomed_rect.width() * self.slider_pos)
             if abs(visual_slider_x - event.x()) < 15:
                 self.is_dragging = True
-                return
-        self.is_panning = True
-        self.last_mouse_pos = event.pos()
+            else:
+                self.is_panning = True
+                self.last_mouse_pos = event.pos()
 
     
     def mouseReleaseEvent(self, event):
@@ -122,6 +122,7 @@ class ComparisonWidget(QWidget):
         new_h = int(h_img * scale)
         offset_x = int((w_widget - new_w) / 2)
         offset_y = int((h_widget - new_h) / 2)
+        
         return QRect(offset_x, offset_y, new_w, new_h)
     
     def dragEnterEvent(self, event):

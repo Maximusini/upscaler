@@ -12,8 +12,7 @@ class ComparisonWidget(QWidget):
         
         self.before = None
         self.after = None
-        self.slider_pos = 0.5 
-        self.slider_x = 0
+        self.slider_pos = 0.5
         self.is_dragging = False
         self.zoom = 1.0
         self.offset_x = 0
@@ -23,12 +22,11 @@ class ComparisonWidget(QWidget):
         
     def set_images(self, before_path:str, after_path:str):
         self.before = QPixmap(before_path)
+        self.slider_pos = 0.5
         if after_path:
             self.after = QPixmap(after_path)
         else:
             self.after = None
-            
-        self.slider_x = self.width() // 2
         
         self.update()
         
@@ -39,9 +37,9 @@ class ComparisonWidget(QWidget):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing)
         
-        target_rect = self.target_rect(self.before)   
         zoomed_rect = self.get_final_rect()
-        visual_slider_x = max(zoomed_rect.left(), min(self.slider_x, zoomed_rect.right()))
+        visual_slider_x = int(zoomed_rect.left() + zoomed_rect.width() * self.slider_pos)
+        visual_slider_x = max(zoomed_rect.left(), min(visual_slider_x, zoomed_rect.right()))
         
         if not self.after:
             painter.drawPixmap(zoomed_rect, self.before)
@@ -70,7 +68,7 @@ class ComparisonWidget(QWidget):
         x = event.x()
         if self.before:
             zoomed_rect = self.get_final_rect()
-            visual_slider_x = max(zoomed_rect.left(), min(self.slider_x, zoomed_rect.right()))
+            visual_slider_x = int(zoomed_rect.left() + zoomed_rect.width() * self.slider_pos)
         
             if abs(visual_slider_x - x) < 15:
                 self.setCursor(Qt.SplitHCursor)
@@ -80,8 +78,8 @@ class ComparisonWidget(QWidget):
                 self.setCursor(Qt.ArrowCursor)
             
             if self.is_dragging:
-                self.slider_x = x
-                self.slider_x = max(zoomed_rect.left(), min(x, zoomed_rect.right()))
+                pos = (event.x() - zoomed_rect.left()) / zoomed_rect.width()
+                self.slider_pos = max(0.0, min(pos, 1.0))
                 self.update()
             elif self.is_panning:
                 delta = event.pos() - self.last_mouse_pos
@@ -95,7 +93,7 @@ class ComparisonWidget(QWidget):
     def mousePressEvent(self, event):
         if self.before:
             zoomed_rect = self.get_final_rect()
-            visual_slider_x = max(zoomed_rect.left(), min(self.slider_x, zoomed_rect.right()))
+            visual_slider_x = int(zoomed_rect.left() + zoomed_rect.width() * self.slider_pos)
             if abs(visual_slider_x - event.x()) < 15:
                 self.is_dragging = True
                 return

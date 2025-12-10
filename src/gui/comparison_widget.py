@@ -15,6 +15,11 @@ class ComparisonWidget(QWidget):
         self.slider_pos = 0.5 
         self.slider_x = 0
         self.is_dragging = False
+        self.zoom = 1.0
+        self.offset_x = 0
+        self.offset_y = 0
+        self.is_panning = False
+        self.last_mouse_pos = None
         
     def set_images(self, before_path:str, after_path:str):
         self.before = QPixmap(before_path)
@@ -34,22 +39,28 @@ class ComparisonWidget(QWidget):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing)
         
-        target_rect = self.target_rect(self.before)
+        target_rect = self.target_rect(self.before)   
+        zoomed_rect = self.get_final_rect()
+        visual_slider_x = max(zoomed_rect.left(), min(self.slider_x, zoomed_rect.right()))
         
         if not self.after:
-            painter.drawPixmap(target_rect, self.before)
+            painter.drawPixmap(zoomed_rect, self.before)
         else:
-            painter.drawPixmap(target_rect, self.after)
-            painter.setClipRect(0, 0, self.slider_x, self.height())
-            painter.drawPixmap(target_rect, self.before)
-            painter.setClipping(False)
+            painter.drawPixmap(zoomed_rect, self.after)
+            
+            clip_width = visual_slider_x - zoomed_rect.left()
+            if clip_width > 0:
+                painter.setClipRect(zoomed_rect.left(), zoomed_rect.top(), clip_width, zoomed_rect.height())
+                painter.drawPixmap(zoomed_rect, self.before)
+                painter.setClipping(False)
+                
             painter.setPen(QPen(Qt.white, 1))
-            painter.drawLine(self.slider_x, target_rect.top(), self.slider_x, target_rect.bottom())
+            painter.drawLine(visual_slider_x, zoomed_rect.top(), visual_slider_x, zoomed_rect.bottom())
             
             painter.setBrush(Qt.white)
             painter.setPen('grey')
-            center_y = target_rect.center().y()
-            rect_x = self.slider_x - 7
+            center_y = zoomed_rect.center().y()
+            rect_x = visual_slider_x - 7
             rect_y = center_y - 20
             painter.drawRoundedRect(rect_x, rect_y, 14, 40, 5, 5)
         
@@ -58,28 +69,43 @@ class ComparisonWidget(QWidget):
     def mouseMoveEvent(self, event):
         x = event.x()
         if self.before:
-            target_rect = self.target_rect(self.before)
+            zoomed_rect = self.get_final_rect()
+            visual_slider_x = max(zoomed_rect.left(), min(self.slider_x, zoomed_rect.right()))
         
-            if abs(self.slider_x - x) < 15:
+            if abs(visual_slider_x - x) < 15:
                 self.setCursor(Qt.SplitHCursor)
+            elif self.is_panning:
+                self.setCursor(Qt.ClosedHandCursor)
             else:
                 self.setCursor(Qt.ArrowCursor)
             
-            if self.is_dragging == True:
+            if self.is_dragging:
                 self.slider_x = x
-                self.slider_x = max(target_rect.left(), min(x, target_rect.right()))
+                self.slider_x = max(zoomed_rect.left(), min(x, zoomed_rect.right()))
+                self.update()
+            elif self.is_panning:
+                delta = event.pos() - self.last_mouse_pos
+                self.offset_x += delta.x()
+                self.offset_y += delta.y()
+                self.last_mouse_pos = event.pos()
                 self.update()
             else:
-                pass
+                self.setCursor(Qt.ArrowCursor)
         
     def mousePressEvent(self, event):
-        if abs(self.slider_x - event.x()) < 15:
-            self.is_dragging = True
-        else:
-            pass
+        if self.before:
+            zoomed_rect = self.get_final_rect()
+            visual_slider_x = max(zoomed_rect.left(), min(self.slider_x, zoomed_rect.right()))
+            if abs(visual_slider_x - event.x()) < 15:
+                self.is_dragging = True
+                return
+        self.is_panning = True
+        self.last_mouse_pos = event.pos()
+
     
     def mouseReleaseEvent(self, event):
         self.is_dragging = False
+        self.is_panning = False
         
     def target_rect(self, pixmap):
         if not pixmap:
@@ -111,3 +137,22 @@ class ComparisonWidget(QWidget):
             file_path = files[0].toLocalFile()
             self.file_dropped.emit(file_path)
         
+    def wheelEvent(self, event):
+        angle = event.angleDelta().y()
+        if angle > 0:
+            self.zoom *= 1.1
+        else:
+            self.zoom /= 1.1
+        self.zoom = max(0.1, min(self.zoom, 10.0))
+        self.update()
+        
+    def get_final_rect(self):
+        base_rect = self.target_rect(self.before)
+        
+        final_w = base_rect.width() * self.zoom
+        final_h = base_rect.height() * self.zoom
+        
+        final_x = base_rect.x() + self.offset_x - (final_w - base_rect.width()) / 2
+        final_y = base_rect.y() + self.offset_y - (final_h - base_rect.height()) / 2
+        
+        return QRect(int(final_x), int(final_y), int(final_w), int(final_h))

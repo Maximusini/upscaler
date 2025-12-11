@@ -1,6 +1,6 @@
 import os
 import shutil
-from PySide6.QtWidgets import QWidget, QMainWindow, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QComboBox, QFileDialog, QProgressBar
+from PySide6.QtWidgets import QWidget, QMainWindow, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QComboBox, QFileDialog, QProgressBar, QListWidget, QListWidgetItem
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QPixmap
 from src.gui.worker import UpscaleWorker
@@ -32,8 +32,9 @@ class MainWindow(QMainWindow):
         controls_layout = QVBoxLayout()
         image_layout = QVBoxLayout()
         
-        self.label_status = QLabel('Выберите файл для обработки')
-        controls_layout.addWidget(self.label_status)
+        self.file_list = QListWidget()
+        self.file_list.itemClicked.connect(self.on_file_clicked)
+        controls_layout.addWidget(self.file_list)
         
         self.btn_file = QPushButton('Выбрать файл')
         self.btn_file.clicked.connect(self.select_file)
@@ -63,6 +64,9 @@ class MainWindow(QMainWindow):
         self.progress_bar.setValue(0)
         controls_layout.addWidget(self.progress_bar)
         
+        self.label_status = QLabel('Выберите файл для обработки')
+        controls_layout.addWidget(self.label_status)
+        
         controls_layout.addStretch()
         
         self.image = ComparisonWidget()
@@ -80,13 +84,13 @@ class MainWindow(QMainWindow):
         if file_path:
             self.btn_save.setEnabled(False)
             self.input_path = file_path
-            if ext in self.VIDEO_EXTS:
-                self.label_status.setText('Видео выбрано (предпросмотр не доступен).')
-                self.btn_start.setEnabled(True)
-            elif ext in self.IMAGE_EXTS:
-                self.image.set_images(file_path, None)
-                self.label_status.setText(f'Выбран файл: {os.path.basename(file_path)}.')
-                self.btn_start.setEnabled(True)
+            if ext in self.VIDEO_EXTS | self.IMAGE_EXTS:
+                file_name = os.path.basename(file_path)
+                item = QListWidgetItem(file_name)
+                item.setData(Qt.UserRole, file_path)
+                self.file_list.addItem(item)
+                self.file_list.setCurrentItem(item)
+                self.on_file_clicked(item)
             else:
                 self.label_status.setText('Ошибка. Данный формат не поддерживается.')
                 self.btn_start.setEnabled(False)
@@ -158,3 +162,19 @@ class MainWindow(QMainWindow):
         if self.temp_output_path and os.path.exists(self.temp_output_path):
             os.remove(self.temp_output_path)
         event.accept()
+
+    def on_file_clicked(self, item):
+        file_path = item.data(Qt.UserRole)
+        self.input_path = file_path
+        self.btn_save.setEnabled(False)
+        ext = os.path.splitext(self.input_path)[1].lower()
+        
+        if ext in self.VIDEO_EXTS:
+            self.image.set_images(file_path, None)
+            self.label_status.setText(f'Выбрано видео: {os.path.basename(self.input_path)}. Предпросмотр не доступен.')
+            self.btn_start.setEnabled(True)
+            self.image.set_images("", None) 
+        elif ext in self.IMAGE_EXTS:
+            self.image.set_images(file_path, None)
+            self.label_status.setText(f'Выбрано изображение: {os.path.basename(file_path)}.')
+            self.btn_start.setEnabled(True)

@@ -1,6 +1,7 @@
 import os
 import shutil
-from PySide6.QtWidgets import QWidget, QMainWindow, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QComboBox, QFileDialog, QProgressBar, QListWidget, QListWidgetItem
+from PySide6.QtWidgets import QWidget, QMainWindow, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, \
+    QComboBox, QFileDialog, QProgressBar, QListWidget, QListWidgetItem, QCheckBox
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QPixmap
 from src.gui.worker import UpscaleWorker
@@ -43,6 +44,9 @@ class MainWindow(QMainWindow):
         self.combo_model = QComboBox()
         self.combo_model.addItems(['x2', 'x4'])
         controls_layout.addWidget(self.combo_model)
+        
+        self.check_batch = QCheckBox('Обработать все файлы сразу')
+        controls_layout.addWidget(self.check_batch)
         
         self.btn_start = QPushButton('Начать')
         self.btn_start.setEnabled(False)
@@ -110,17 +114,40 @@ class MainWindow(QMainWindow):
         self.btn_stop.setEnabled(True)
         self.progress_bar.setValue(0)
         
-        root, ext = os.path.splitext(self.input_path)
-        
-        if self.temp_output_path and os.path.exists(self.temp_output_path):
-            os.remove(self.temp_output_path)
+        files_to_process = []
+        if self.check_batch.isChecked():
+            for i in range(self.file_list.count()):
+                item = self.file_list.item(i)
+                path = item.data(Qt.UserRole)
+                files_to_process.append(path)
+                
+            if not files_to_process:
+                self.label_status.setText('Нет файлов для обработки.')
+                self.btn_start.setEnabled(True)
+                self.btn_stop.setEnabled(False)
+                return
             
-        self.temp_output_path = os.path.join(os.getcwd(), f'temp{ext}')
+            self.temp_output_path = os.path.join(os.getcwd(), 'temp_batch_folder')
+            if os.path.exists(self.temp_output_path):
+                shutil.rmtree(self.temp_output_path)
+            os.makedirs(self.temp_output_path)
+            
+        else:
+            if not self.input_path:
+                self.label_status.setText('Файл не выбран.')
+                self.btn_start.setEnabled(True)
+                self.btn_stop.setEnabled(False)
+                return
+            
+            files_to_process = [self.input_path]
+            ext = os.path.splitext(files_to_process[0])
+            self.temp_output_path = os.path.join(os.getcwd(), f'temp{ext}')
+            if os.path.exists(self.temp_output_path):
+                os.remove(self.temp_output_path)
         
-        input_path = self.input_path
         model_choice = self.combo_model.currentText()
         
-        self.worker = UpscaleWorker(input_path, model_choice, self.temp_output_path)
+        self.worker = UpscaleWorker(files_to_process, model_choice, self.temp_output_path)
         
         self.worker.log_signal.connect(self.update_status)
         self.worker.finished_signal.connect(self.process_finished)

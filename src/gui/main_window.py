@@ -187,7 +187,16 @@ class MainWindow(QMainWindow):
         self.btn_start.setEnabled(True)
         self.btn_stop.setEnabled(False)
         self.btn_save.setEnabled(True)
-        if self.temp_output_path:
+        
+        if not self.temp_output_path:
+            return
+        
+        if os.path.isdir(self.temp_output_path):
+            current_item = self.file_list.currentItem()
+            if current_item:
+                self.on_file_clicked(current_item)
+        
+        elif os.path.isfile(self.temp_output_path):
             ext = os.path.splitext(self.temp_output_path)[1].lower()
             if ext not in self.VIDEO_EXTS:
                 self.image.set_images(self.input_path, self.temp_output_path)

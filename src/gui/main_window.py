@@ -175,15 +175,24 @@ class MainWindow(QMainWindow):
         self.btn_save.setEnabled(False)
         self.label_status.setText('Отменено.')
         
-    def save_result(self):
-        root, ext = os.path.splitext(self.input_path)
-        suggested_path = f'{root}_upscaled{ext}'
-        
-        file_path, _ = QFileDialog.getSaveFileName(self, 'Сохранить результат', suggested_path, 'Images (*.png *.jpg);;Video (*.mp4)')
-        
-        if file_path:
-            shutil.copy2(self.temp_output_path, file_path)
-            self.label_status.setText('Файл успешно сохранён')
+    def save_result(self):        
+        if os.path.isdir(self.temp_output_path):
+            suggested_path = 'upscaled_batch'
+            archive_path, _ = QFileDialog.getSaveFileName(self, 'Сохранить архив', suggested_path, 'ZIP Archive (*.zip)')
+            if archive_path:
+                self.label_status.setText('Упаковка архива...')
+                root = os.path.splitext(archive_path)[0]
+                shutil.make_archive(root, 'zip', self.temp_output_path)
+                self.label_status.setText('Архив успешно сохранён!')
+                
+        else:
+            root, ext = os.path.splitext(self.input_path)
+            suggested_path = f'{root}_upscaled{ext}'
+            file_path, _ = QFileDialog.getSaveFileName(self, 'Сохранить результат', suggested_path, 'Images (*.png *.jpg);;Video (*.mp4)')
+            
+            if file_path:
+                shutil.copy2(self.temp_output_path, file_path)
+                self.label_status.setText('Файл успешно сохранён')
             
     def closeEvent(self, event):
         if self.temp_output_path and os.path.exists(self.temp_output_path):

@@ -11,4 +11,7 @@ weights/
 *.jpg
 *.png
 *.jpeg
+*.webp
 *.mp4
+*.webm
+*.avi

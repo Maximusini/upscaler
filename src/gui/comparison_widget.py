@@ -134,8 +134,9 @@ class ComparisonWidget(QWidget):
     def dropEvent(self, event):
         files = event.mimeData().urls()
         if files:
-            file_path = files[0].toLocalFile()
-            self.file_dropped.emit(file_path)
+            for file in files:
+                file_path = file.toLocalFile()
+                self.file_dropped.emit(file_path)
         
     def wheelEvent(self, event):
         angle = event.angleDelta().y()

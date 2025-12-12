@@ -95,13 +95,37 @@ class MainWindow(QMainWindow):
                 self.file_list.addItem(item)
                 self.file_list.setCurrentItem(item)
                 self.on_file_clicked(item)
+                
+                widget = QWidget()
+                layout = QHBoxLayout(widget)
+                layout.setContentsMargins(5, 2, 5, 2)
+                label = QLabel(os.path.basename(file_path))
+                btn_del = QPushButton('X')
+                btn_del.setFixedSize(20, 20)
+                layout.addWidget(label)
+                layout.addStretch()
+                layout.addWidget(btn_del)
+                
+                btn_del.clicked.connect(lambda: self.remove_item(item))
+                self.file_list.setItemWidget(item, widget)
             else:
                 self.label_status.setText('Ошибка. Данный формат не поддерживается.')
                 self.btn_start.setEnabled(False)
                 
+    def remove_item(self, item):
+        row = self.file_list.row(item)
+        self.file_list.takeItem(row)
+        
+        if self.file_list.count() == 0:
+            self.image.set_images("", None)
+            self.btn_start.setEnabled(False)
+            self.label_status.setText("Список пуст")
+                
     def select_file(self):
-        file_path, _ = QFileDialog.getOpenFileName(self, 'Выберите файл', '', 'Images & Video (*.jpg *.png *.mp4)')
-        self.load_file(file_path)
+        file_paths, _ = QFileDialog.getOpenFileNames(self, 'Выберите файлы', '', 'Images & Video (*.jpg *.png *.mp4)')
+        if file_paths:
+            for file_path in file_paths:              
+                self.load_file(file_path)
             
     def update_status(self, text):
         self.label_status.setText(text)
@@ -140,10 +164,13 @@ class MainWindow(QMainWindow):
                 return
             
             files_to_process = [self.input_path]
-            ext = os.path.splitext(files_to_process[0])
+            ext = os.path.splitext(files_to_process[0])[1]
             self.temp_output_path = os.path.join(os.getcwd(), f'temp{ext}')
             if os.path.exists(self.temp_output_path):
-                os.remove(self.temp_output_path)
+                if os.path.isdir(self.temp_output_path):
+                    shutil.rmtree(self.temp_output_path)
+                else:
+                    os.remove(self.temp_output_path)
         
         model_choice = self.combo_model.currentText()
         
@@ -196,7 +223,10 @@ class MainWindow(QMainWindow):
             
     def closeEvent(self, event):
         if self.temp_output_path and os.path.exists(self.temp_output_path):
-            os.remove(self.temp_output_path)
+            if os.path.isdir(self.temp_output_path):
+                shutil.rmtree(self.temp_output_path)
+            else:
+                os.remove(self.temp_output_path)
         event.accept()
 
     def on_file_clicked(self, item):
@@ -206,11 +236,25 @@ class MainWindow(QMainWindow):
         ext = os.path.splitext(self.input_path)[1].lower()
         
         if ext in self.VIDEO_EXTS:
-            self.image.set_images(file_path, None)
             self.label_status.setText(f'Выбрано видео: {os.path.basename(self.input_path)}. Предпросмотр не доступен.')
             self.btn_start.setEnabled(True)
             self.image.set_images("", None) 
+            
         elif ext in self.IMAGE_EXTS:
-            self.image.set_images(file_path, None)
             self.label_status.setText(f'Выбрано изображение: {os.path.basename(file_path)}.')
             self.btn_start.setEnabled(True)
+            
+            output_to_show = None
+            
+            if self.temp_output_path and os.path.isdir(self.temp_output_path):
+                file_name = os.path.splitext(os.path.basename(file_path))[0]
+                expected_name = f'{file_name}_upscaled{ext}'
+                expected_path = os.path.join(self.temp_output_path, expected_name)
+                
+                if os.path.exists(expected_path):
+                    output_to_show = expected_path
+            
+            elif self.temp_output_path and os.path.isfile(self.temp_output_path):
+                pass
+            
+            self.image.set_images(file_path, output_to_show)

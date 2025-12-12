@@ -241,7 +241,12 @@ class MainWindow(QMainWindow):
     def on_file_clicked(self, item):
         file_path = item.data(Qt.UserRole)
         self.input_path = file_path
-        self.btn_save.setEnabled(False)
+        
+        if self.temp_output_path and os.path.isdir(self.temp_output_path):
+            self.btn_save.setEnabled(True)
+        else:
+            self.btn_save.setEnabled(False)
+            
         ext = os.path.splitext(self.input_path)[1].lower()
         
         if ext in self.VIDEO_EXTS:

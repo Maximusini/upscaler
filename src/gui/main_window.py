@@ -173,10 +173,12 @@ class MainWindow(QMainWindow):
         self.btn_start.setEnabled(False)
         self.btn_stop.setEnabled(True)
         self.progress_bar.setValue(0)
+
         
         self.cleanup_temp()
         os.makedirs(self.work_dir, exist_ok=True)
-        
+
+        save_format = self.combo_format.currentText()        
         files_to_process = []
         if self.check_batch.isChecked():
             for i in range(self.file_list.count()):
@@ -201,12 +203,18 @@ class MainWindow(QMainWindow):
                 return
             
             files_to_process = [self.input_path]
-            ext = os.path.splitext(files_to_process[0])[1]
+            src_ext = os.path.splitext(self.input_path)[1].lower()
+            if src_ext in self.VIDEO_EXTS:
+                ext = src_ext
+            elif save_format == 'Auto':
+                ext = src_ext
+            else:
+                ext = f'.{save_format.lower()}'
             self.temp_output_path = os.path.join(self.work_dir, f'result{ext}')
         
         model_choice = self.combo_model.currentText()
         
-        self.worker = UpscaleWorker(files_to_process, model_choice, self.temp_output_path)
+        self.worker = UpscaleWorker(files_to_process, model_choice, self.temp_output_path, save_format)
         
         self.worker.log_signal.connect(self.update_status)
         self.worker.finished_signal.connect(self.process_finished)

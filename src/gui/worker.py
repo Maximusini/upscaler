@@ -11,11 +11,12 @@ class UpscaleWorker(QThread):
     progress_signal = Signal(int)
     stopped_signal = Signal()
     
-    def __init__(self, input_files, model_choice, output_path):
+    def __init__(self, input_files, model_choice, output_path, save_format):
         super().__init__()
         self.input_files = input_files
         self.model_choice = model_choice
         self.output_path = output_path
+        self.save_format = save_format
     
     def report_progress(self, percent):
         self.progress_signal.emit(percent)
@@ -35,6 +36,7 @@ class UpscaleWorker(QThread):
         self.log_signal.emit('Обработка...')
         
         for i, file_path in enumerate(self.input_files):
+            src_ext = os.path.splitext(file_path)[1].lower()
             if self.isInterruptionRequested():
                 break
             
@@ -42,7 +44,10 @@ class UpscaleWorker(QThread):
             current_progress = int((i / len(self.input_files)) * 100)
             self.progress_signal.emit(current_progress)
             
-            ext = os.path.splitext(file_path)[1]
+            if self.save_format == 'Auto':
+                ext = os.path.splitext(file_path)[1]
+            else:
+                ext = f'.{self.save_format.lower()}'
             
             if os.path.isdir(self.output_path):
                 file_name = os.path.splitext(os.path.basename(file_path))[0]
@@ -52,11 +57,13 @@ class UpscaleWorker(QThread):
             else:
                 current_output = self.output_path
                 
-            if ext.lower() in ['.mp4', '.avi', '.mov', '.mkv', '.webm']:
+            if src_ext.lower() in ['.mp4', '.avi', '.mov', '.mkv', '.webm']:
+                current_output_path = os.path.splitext(current_output)[0]
+                final_video_path  = f'{current_output_path}{src_ext}'
                 video_upscaler = VideoUpscaler(upscaler)
-                video_upscaler.process_video(file_path, current_output, self.report_progress)
+                video_upscaler.process_video(file_path, final_video_path, self.report_progress)
                 
-            elif ext.lower() in ['.jpg', '.jpeg', '.png', '.bmp', '.webp']:
+            elif src_ext.lower() in ['.jpg', '.jpeg', '.png', '.bmp', '.webp']:
                 img = read_image(file_path)
                 res = upscaler.process_image(img)
                 save_image(current_output, res)
@@ -69,4 +76,3 @@ class UpscaleWorker(QThread):
         else:
             self.log_signal.emit('Готово! Все файлы обработаны.')
             self.finished_signal.emit()
-                

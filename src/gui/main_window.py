@@ -2,7 +2,7 @@ import os
 import shutil
 import tempfile
 from PySide6.QtWidgets import QWidget, QMainWindow, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, \
-    QComboBox, QFileDialog, QProgressBar, QListWidget, QListWidgetItem, QCheckBox
+    QComboBox, QFileDialog, QProgressBar, QListWidget, QListWidgetItem, QCheckBox, QGroupBox
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QPixmap
 from src.gui.worker import UpscaleWorker
@@ -37,40 +37,68 @@ class MainWindow(QMainWindow):
         controls_layout = QVBoxLayout()
         image_layout = QVBoxLayout()
         
+        self.files_group = QGroupBox('Файлы')
+        files_layout = QVBoxLayout()
+        
+        self.label_files_list = QLabel('Список файлов:')
+        files_layout.addWidget(self.label_files_list)
         self.file_list = QListWidget()
         self.file_list.itemClicked.connect(self.on_file_clicked)
-        controls_layout.addWidget(self.file_list)
+        files_layout.addWidget(self.file_list)
         
         self.btn_file = QPushButton('Выбрать файл')
         self.btn_file.clicked.connect(self.select_file)
-        controls_layout.addWidget(self.btn_file)
-        
-        self.combo_model = QComboBox()
-        self.combo_model.addItems(['x2', 'x4'])
-        controls_layout.addWidget(self.combo_model)
+        files_layout.addWidget(self.btn_file)
         
         self.check_batch = QCheckBox('Обработать все файлы сразу')
-        controls_layout.addWidget(self.check_batch)
+        files_layout.addWidget(self.check_batch)
+        
+        self.files_group.setLayout(files_layout)
+        controls_layout.addWidget(self.files_group)
+        
+        self.params_group = QGroupBox('Параметры обработки')
+        params_layout = QVBoxLayout()
+        
+        self.label_model = QLabel('Модель:')
+        params_layout.addWidget(self.label_model)
+        self.combo_model = QComboBox()
+        self.combo_model.addItems(['x2', 'x4'])
+        params_layout.addWidget(self.combo_model)
+        
+        self.label_format = QLabel('Формат сохранения:')
+        params_layout.addWidget(self.label_format)
+        self.combo_format = QComboBox()
+        self.combo_format.addItems(['Auto', 'PNG', 'JPG', 'WEBP'])
+        params_layout.addWidget(self.combo_format)
+        
+        self.params_group.setLayout(params_layout)
+        controls_layout.addWidget(self.params_group)
+        
+        self.actions_group = QGroupBox('Действия')
+        actions_layout = QVBoxLayout()
         
         self.btn_start = QPushButton('Начать')
         self.btn_start.setEnabled(False)
         self.btn_start.clicked.connect(self.start_processing)
-        controls_layout.addWidget(self.btn_start)
+        actions_layout.addWidget(self.btn_start)
         
         self.btn_save = QPushButton('Сохранить результат')
         self.btn_save.setEnabled(False)
         self.btn_save.clicked.connect(self.save_result)
-        controls_layout.addWidget(self.btn_save)
+        actions_layout.addWidget(self.btn_save)
         
         self.btn_stop = QPushButton('Стоп')
         self.btn_stop.setEnabled(False)
         self.btn_stop.clicked.connect(self.stop_processing)
-        controls_layout.addWidget(self.btn_stop)
+        actions_layout.addWidget(self.btn_stop)
         
         self.progress_bar = QProgressBar()
         self.progress_bar.setRange(0, 100)
         self.progress_bar.setValue(0)
-        controls_layout.addWidget(self.progress_bar)
+        actions_layout.addWidget(self.progress_bar)
+        
+        self.actions_group.setLayout(actions_layout)
+        controls_layout.addWidget(self.actions_group)
         
         self.label_status = QLabel('Выберите файл для обработки')
         controls_layout.addWidget(self.label_status)

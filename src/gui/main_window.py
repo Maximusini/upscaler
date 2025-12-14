@@ -1,5 +1,6 @@
 import os
 import shutil
+import tempfile
 from PySide6.QtWidgets import QWidget, QMainWindow, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, \
     QComboBox, QFileDialog, QProgressBar, QListWidget, QListWidgetItem, QCheckBox
 from PySide6.QtCore import Qt
@@ -19,6 +20,9 @@ class MainWindow(QMainWindow):
         self.input_path = None
         self.output_path = None
         self.temp_output_path = None
+        
+        system_temp = tempfile.gettempdir()
+        self.work_dir = os.path.join(system_temp, 'NeuralUpscaler_work')
     
     def setup_ui(self):
         self.setWindowTitle('Neural Upscaler')
@@ -82,6 +86,10 @@ class MainWindow(QMainWindow):
         main_layout.addLayout(image_layout)
         main_layout.setStretch(0, 1)
         main_layout.setStretch(1, 3)
+        
+    def cleanup_temp(self):
+        if os.path.exists(self.work_dir):
+            shutil.rmtree(self.work_dir)
                 
     def load_file(self, file_path):
         ext = os.path.splitext(file_path)[1].lower()
@@ -138,6 +146,9 @@ class MainWindow(QMainWindow):
         self.btn_stop.setEnabled(True)
         self.progress_bar.setValue(0)
         
+        self.cleanup_temp()
+        os.makedirs(self.work_dir, exist_ok=True)
+        
         files_to_process = []
         if self.check_batch.isChecked():
             for i in range(self.file_list.count()):
@@ -151,10 +162,8 @@ class MainWindow(QMainWindow):
                 self.btn_stop.setEnabled(False)
                 return
             
-            self.temp_output_path = os.path.join(os.getcwd(), 'temp_batch_folder')
-            if os.path.exists(self.temp_output_path):
-                shutil.rmtree(self.temp_output_path)
-            os.makedirs(self.temp_output_path)
+            self.temp_output_path = os.path.join(self.work_dir, 'batch_results')
+            os.makedirs(self.temp_output_path, exist_ok=True)
             
         else:
             if not self.input_path:
@@ -165,12 +174,7 @@ class MainWindow(QMainWindow):
             
             files_to_process = [self.input_path]
             ext = os.path.splitext(files_to_process[0])[1]
-            self.temp_output_path = os.path.join(os.getcwd(), f'temp{ext}')
-            if os.path.exists(self.temp_output_path):
-                if os.path.isdir(self.temp_output_path):
-                    shutil.rmtree(self.temp_output_path)
-                else:
-                    os.remove(self.temp_output_path)
+            self.temp_output_path = os.path.join(self.work_dir, f'result{ext}')
         
         model_choice = self.combo_model.currentText()
         
@@ -236,6 +240,8 @@ class MainWindow(QMainWindow):
                 shutil.rmtree(self.temp_output_path)
             else:
                 os.remove(self.temp_output_path)
+        
+        self.cleanup_temp()
         event.accept()
 
     def on_file_clicked(self, item):

@@ -2,12 +2,14 @@ import os
 import shutil
 import tempfile
 from PySide6.QtWidgets import QWidget, QMainWindow, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, \
-    QComboBox, QFileDialog, QProgressBar, QListWidget, QListWidgetItem, QCheckBox, QGroupBox
+    QComboBox, QFileDialog, QProgressBar, QListWidget, QListWidgetItem, QCheckBox, QGroupBox, \
+    QTabWidget
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QPixmap
 from src.core.config import ConfigManager
 from src.gui.worker import UpscaleWorker
 from src.gui.comparison_widget import ComparisonWidget
+from src.core.system_utils import get_gpu_info, check_ffmpeg
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -31,94 +33,140 @@ class MainWindow(QMainWindow):
     
     def setup_ui(self):
         self.setWindowTitle('Neural Upscaler')
-        self.setMinimumSize(800, 600)
+        self.setMinimumSize(900, 700)
         
         widget = QWidget()
         self.setCentralWidget(widget)
-        
         main_layout = QHBoxLayout()
         widget.setLayout(main_layout)
         
         controls_layout = QVBoxLayout()
         image_layout = QVBoxLayout()
         
+        self.tabs = QTabWidget()
+        self.create_main_tab()
+        self.create_info_tab()
+        controls_layout.addWidget(self.tabs)
+        
+        self.create_actions_group()
+        controls_layout.addWidget(self.actions_group)
+        
+        self.label_status = QLabel('Готов к работе')
+        self.label_status.setStyleSheet("color: #888;")
+        controls_layout.addWidget(self.label_status)
+        
+        self.image = ComparisonWidget()
+        self.image.file_dropped.connect(self.load_file)
+        self.image.setStyleSheet('border: 2px dashed #444; background-color: #222;')
+        image_layout.addWidget(self.image)
+        
+        main_layout.addLayout(controls_layout)
+        main_layout.addLayout(image_layout)
+        main_layout.setStretch(0, 35)
+        main_layout.setStretch(1, 65)
+        
+    def create_main_tab(self):
+        tab = QWidget()
+        layout = QVBoxLayout()
+        tab.setLayout(layout)
+
         self.files_group = QGroupBox('Файлы')
         files_layout = QVBoxLayout()
         
-        self.label_files_list = QLabel('Список файлов:')
-        files_layout.addWidget(self.label_files_list)
+        files_layout.addWidget(QLabel('Список файлов:'))
         self.file_list = QListWidget()
         self.file_list.itemClicked.connect(self.on_file_clicked)
         files_layout.addWidget(self.file_list)
         
-        self.btn_file = QPushButton('Выбрать файл')
+        self.btn_file = QPushButton('Добавить файлы...')
         self.btn_file.clicked.connect(self.select_file)
         files_layout.addWidget(self.btn_file)
         
-        self.check_batch = QCheckBox('Обработать все файлы сразу')
+        self.check_batch = QCheckBox('Обработать все файлы')
         files_layout.addWidget(self.check_batch)
         
         self.files_group.setLayout(files_layout)
-        controls_layout.addWidget(self.files_group)
-        
-        self.params_group = QGroupBox('Параметры обработки')
+        layout.addWidget(self.files_group)
+
+        self.params_group = QGroupBox('Настройки')
         params_layout = QVBoxLayout()
         
-        self.label_model = QLabel('Модель:')
-        params_layout.addWidget(self.label_model)
+        params_layout.addWidget(QLabel('Модель нейросети:'))
         self.combo_model = QComboBox()
         self.combo_model.addItems(['x2', 'x4'])
         params_layout.addWidget(self.combo_model)
         
-        self.label_format = QLabel('Формат сохранения:')
-        params_layout.addWidget(self.label_format)
+        params_layout.addWidget(QLabel('Формат сохранения:'))
         self.combo_format = QComboBox()
         self.combo_format.addItems(['Auto', 'PNG', 'JPG', 'WEBP'])
         params_layout.addWidget(self.combo_format)
         
         self.params_group.setLayout(params_layout)
-        controls_layout.addWidget(self.params_group)
+        layout.addWidget(self.params_group)
+
+        layout.addStretch()
+
+        self.tabs.addTab(tab, 'Главная')
         
-        self.actions_group = QGroupBox('Действия')
-        actions_layout = QVBoxLayout()
+    def create_info_tab(self):
+        tab = QWidget()
+        layout = QVBoxLayout()
+        tab.setLayout(layout)
+
+        gpu_info = get_gpu_info()
+        lbl_gpu = QLabel(gpu_info)
+        if "GPU" in gpu_info:
+            lbl_gpu.setStyleSheet("color: green; font-weight: bold;") # Зеленый
+        else:
+            lbl_gpu.setStyleSheet("color: red; font-weight: bold;") # Красный
+
+        has_ffmpeg = check_ffmpeg()
+        ffmpeg_text = "FFmpeg: Установлен (Видео доступно)" if has_ffmpeg else "FFmpeg: Не найден (Только фото)"
+        lbl_ffmpeg = QLabel(ffmpeg_text)
+        color = "green" if has_ffmpeg else "red"
+        lbl_ffmpeg.setStyleSheet(f"color: {color}; font-weight: bold;")
+
+        lbl_ver = QLabel("Версия: v1.0.0 Release")
+        lbl_ver.setStyleSheet("color: #888; margin-top: 20px;")
         
-        self.btn_start = QPushButton('Начать')
+        layout.addWidget(lbl_gpu)
+        layout.addWidget(lbl_ffmpeg)
+        layout.addWidget(lbl_ver)
+        layout.addStretch()
+        
+        self.tabs.addTab(tab, "Система")
+
+    def create_actions_group(self):
+        self.actions_group = QGroupBox('Управление')
+        layout = QVBoxLayout()
+        
+        self.btn_start = QPushButton('НАЧАТЬ ОБРАБОТКУ')
+        self.btn_start.setMinimumHeight(40)
         self.btn_start.setEnabled(False)
         self.btn_start.clicked.connect(self.start_processing)
-        actions_layout.addWidget(self.btn_start)
+        layout.addWidget(self.btn_start)
+
+        btns_layout = QHBoxLayout()
         
-        self.btn_save = QPushButton('Сохранить результат')
+        self.btn_save = QPushButton('Сохранить')
         self.btn_save.setEnabled(False)
         self.btn_save.clicked.connect(self.save_result)
-        actions_layout.addWidget(self.btn_save)
+        btns_layout.addWidget(self.btn_save)
         
         self.btn_stop = QPushButton('Стоп')
         self.btn_stop.setEnabled(False)
         self.btn_stop.clicked.connect(self.stop_processing)
-        actions_layout.addWidget(self.btn_stop)
+        btns_layout.addWidget(self.btn_stop)
+        
+        layout.addLayout(btns_layout)
         
         self.progress_bar = QProgressBar()
         self.progress_bar.setRange(0, 100)
         self.progress_bar.setValue(0)
-        actions_layout.addWidget(self.progress_bar)
+        self.progress_bar.setFixedHeight(10)
+        layout.addWidget(self.progress_bar)
         
-        self.actions_group.setLayout(actions_layout)
-        controls_layout.addWidget(self.actions_group)
-        
-        self.label_status = QLabel('Выберите файл для обработки')
-        controls_layout.addWidget(self.label_status)
-        
-        controls_layout.addStretch()
-        
-        self.image = ComparisonWidget()
-        self.image.file_dropped.connect(self.load_file)
-        self.image.setStyleSheet('border: 2px dashed grey;')
-        image_layout.addWidget(self.image)
-        
-        main_layout.addLayout(controls_layout)
-        main_layout.addLayout(image_layout)
-        main_layout.setStretch(0, 1)
-        main_layout.setStretch(1, 3)
+        self.actions_group.setLayout(layout)
         
     def cleanup_temp(self):
         if os.path.exists(self.work_dir):

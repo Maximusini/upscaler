@@ -5,6 +5,7 @@ from PySide6.QtWidgets import QWidget, QMainWindow, QVBoxLayout, QHBoxLayout, QP
     QComboBox, QFileDialog, QProgressBar, QListWidget, QListWidgetItem, QCheckBox, QGroupBox
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QPixmap
+from src.core.config import ConfigManager
 from src.gui.worker import UpscaleWorker
 from src.gui.comparison_widget import ComparisonWidget
 
@@ -23,6 +24,10 @@ class MainWindow(QMainWindow):
         
         system_temp = tempfile.gettempdir()
         self.work_dir = os.path.join(system_temp, 'NeuralUpscaler_work')
+        
+        self.config_manager = ConfigManager()
+        self.settings = self.config_manager.load_config()
+        self.apply_settings()
     
     def setup_ui(self):
         self.setWindowTitle('Neural Upscaler')
@@ -158,8 +163,13 @@ class MainWindow(QMainWindow):
             self.label_status.setText("Список пуст")
                 
     def select_file(self):
-        file_paths, _ = QFileDialog.getOpenFileNames(self, 'Выберите файлы', '', 'Images & Video (*.jpg *.png *.mp4)')
+        start_dir = self.settings.get('last_path', '')
+            
+        file_paths, _ = QFileDialog.getOpenFileNames(self, 'Выберите файлы', start_dir, 'Images & Video (*.jpg *.png *.mp4)')
         if file_paths:
+            current_dir = os.path.dirname(file_paths[0])
+            self.settings['last_path'] = current_dir
+            
             for file_path in file_paths:              
                 self.load_file(file_path)
             
@@ -277,6 +287,10 @@ class MainWindow(QMainWindow):
             else:
                 os.remove(self.temp_output_path)
         
+        self.settings['model'] = self.combo_model.currentText()
+        self.settings['format'] = self.combo_format.currentText()
+        self.config_manager.save_config(self.settings)
+        
         self.cleanup_temp()
         event.accept()
 
@@ -314,3 +328,9 @@ class MainWindow(QMainWindow):
                 pass
             
             self.image.set_images(file_path, output_to_show)
+            
+    def apply_settings(self):
+        if 'model' in self.settings:
+            self.combo_model.setCurrentText(self.settings['model'])
+        if 'format' in self.settings:
+            self.combo_format.setCurrentText(self.settings['format'])

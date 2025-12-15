@@ -13,6 +13,7 @@ from qt_material import apply_stylesheet
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
+    app.setApplicationName('NeuralUpscaler')
     QImageReader.setAllocationLimit(0)
     apply_stylesheet(app, theme='dark_blue.xml')
 

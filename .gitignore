@@ -15,3 +15,7 @@ weights/
 *.mp4
 *.webm
 *.avi
+
+build/
+dist/
+*.spec

@@ -320,9 +320,12 @@ class MainWindow(QMainWindow):
                 self.label_status.setText('Архив успешно сохранён!')
                 
         else:
-            root, ext = os.path.splitext(self.input_path)
-            suggested_path = f'{root}_upscaled{ext}'
-            file_path, _ = QFileDialog.getSaveFileName(self, 'Сохранить результат', suggested_path, 'Images (*.png *.jpg);;Video (*.mp4)')
+            root = os.path.splitext(self.input_path)[0]
+            result_ext = os.path.splitext(self.temp_output_path)[1]
+            
+            suggested_path = f'{root}_upscaled{result_ext}'
+
+            file_path, _ = QFileDialog.getSaveFileName(self, 'Сохранить результат', suggested_path, 'Images (*.png *.jpg *.webp);')
             
             if file_path:
                 shutil.copy2(self.temp_output_path, file_path)

@@ -27,10 +27,10 @@ class UpscaleWorker(QThread):
         self.log_signal.emit('Загрузка нейросети...')
         
         if self.model_choice == 'x2':
-            model_path = get_resource_path('weights/RealESRGAN_x2plus.pth')
+            model_path = get_resource_path('weights/RealESRGAN_x2plus.onnx')
             scale = 2
         else:
-            model_path = get_resource_path('weights/RealESRGAN_x4plus.pth')
+            model_path = get_resource_path('weights/RealESRGAN_x4plus.onnx')
             scale = 4
         
         upscaler = Upscaler(model_path=model_path, scale=scale)

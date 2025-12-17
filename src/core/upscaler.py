@@ -1,32 +1,13 @@
-import torch
 import numpy as np
 import cv2
-
-from src.core.model_arch import RRDBNet
+import onnxruntime as ort
 
 
 class Upscaler:
-    def __init__(self, model_path:str, device:str = 'cuda', scale:int = 4):
-        self.device = device
+    def __init__(self, model_path:str, scale:int = 4):
         self.scale = scale
         
-        self.model = RRDBNet(num_in_ch=3, 
-                        num_out_ch=3, 
-                        scale=scale, 
-                        num_feat=64, 
-                        num_block=23, 
-                        num_grow_ch=32)
-        
-        loadnet = torch.load(model_path, map_location=device)
-        
-        if 'params_ema' in loadnet:
-            keyname = 'params_ema'
-        else:
-            keyname = 'params'
-            
-        self.model.load_state_dict(loadnet[keyname], strict=True)
-        self.model.eval()
-        self.model.to(self.device)
+        self.session = ort.InferenceSession(model_path, providers = ['CUDAExecutionProvider', 'CPUExecutionProvider'])
     
     def process_image(self, img:np.ndarray, tile_size=400, tile_pad=10) -> np.ndarray:
         h, w, c = img.shape
@@ -40,6 +21,7 @@ class Upscaler:
                 x_end = min(w, j + tile_pad + tile_size)
                 
                 img_patch = img[y_start:y_end, x_start:x_end, :]
+                
                 pad_h = 0
                 pad_w = 0
                 h_patch, w_patch = img_patch.shape[:2]
@@ -53,14 +35,12 @@ class Upscaler:
                     img_patch = cv2.copyMakeBorder(img_patch, 0, pad_h, 0, pad_w, cv2.BORDER_REFLECT_101)
                 img_patch = img_patch.astype(np.float32) / 255.0
                 img_patch = np.transpose(img_patch[:, :, [2, 1, 0]], (2, 0, 1))
-                img_patch = torch.from_numpy(img_patch).float()
-                img_patch = img_patch.unsqueeze(0).to(self.device)
-                
-                with torch.no_grad():
-                    output = self.model(img_patch)
-                
-                output_patch = output.data.squeeze().float().cpu().clamp_(0, 1).numpy()
-                output_patch = np.transpose(output_patch[[2, 1, 0], :, :], (1, 2, 0))
+                img_patch = np.expand_dims(img_patch, axis=0) 
+
+                output_patch = self.session.run(None, {'input': img_patch})[0]
+                output_patch = np.squeeze(output_patch)
+                output_patch = np.clip(output_patch, 0, 1)
+                output_patch = np.transpose(output_patch[:, :, [2, 1, 0]], (1, 2, 0))
                 output_patch = (output_patch * 255.0).round().astype(np.uint8)
                 
                 start_y_in_patch = (i - y_start) * self.scale

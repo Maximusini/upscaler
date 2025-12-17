@@ -40,7 +40,7 @@ class Upscaler:
                 output_patch = self.session.run(None, {'input': img_patch})[0]
                 output_patch = np.squeeze(output_patch)
                 output_patch = np.clip(output_patch, 0, 1)
-                output_patch = np.transpose(output_patch[:, :, [2, 1, 0]], (1, 2, 0))
+                output_patch = np.transpose(output_patch[[2, 1, 0], :, :], (1, 2, 0))
                 output_patch = (output_patch * 255.0).round().astype(np.uint8)
                 
                 start_y_in_patch = (i - y_start) * self.scale

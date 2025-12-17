@@ -8,8 +8,12 @@ class Upscaler:
         self.scale = scale
         
         self.session = ort.InferenceSession(model_path, providers = ['CUDAExecutionProvider', 'CPUExecutionProvider'])
+        
+        input_type = self.session.get_inputs()[0].type
+        self.is_fp16 = 'float16' in input_type
+        print(f"Model loaded. Precision: {'FP16' if self.is_fp16 else 'FP32'}")
     
-    def process_image(self, img:np.ndarray, tile_size=400, tile_pad=10) -> np.ndarray:
+    def process_image(self, img:np.ndarray, tile_size=800, tile_pad=10) -> np.ndarray:
         h, w, c = img.shape
         img_up = np.zeros((h * self.scale, w * self.scale, c), dtype=np.uint8)
         
@@ -34,6 +38,10 @@ class Upscaler:
                 if pad_h > 0 or pad_w > 0:
                     img_patch = cv2.copyMakeBorder(img_patch, 0, pad_h, 0, pad_w, cv2.BORDER_REFLECT_101)
                 img_patch = img_patch.astype(np.float32) / 255.0
+                
+                if self.is_fp16:
+                    img_patch = img_patch.astype(np.float16)
+                
                 img_patch = np.transpose(img_patch[:, :, [2, 1, 0]], (2, 0, 1))
                 img_patch = np.expand_dims(img_patch, axis=0) 
 

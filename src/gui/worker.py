@@ -1,5 +1,4 @@
 import os
-import cv2
 from PySide6.QtCore import QThread, Signal
 from src.core.path_utils import get_resource_path
 from src.core.upscaler import Upscaler

@@ -1,5 +1,6 @@
 import sys
 import os
+import onnxruntime as ort
 from PySide6.QtGui import QImageReader
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -14,6 +15,14 @@ from qt_material import apply_stylesheet
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     app.setApplicationName('NeuralUpscaler')
+    
+    try:
+        if hasattr(ort, 'preload_dlls'):
+            ort.preload_dlls()
+            print('NVIDIA libs preloaded.')
+    except Exception as e:
+        print(f'Info: {e}')
+        
     QImageReader.setAllocationLimit(0)
     apply_stylesheet(app, theme='dark_blue.xml')
 

@@ -1,10 +1,10 @@
-import torch
+import onnxruntime as ort
 import subprocess
 
 def get_gpu_info():
-    if torch.cuda.is_available():
-        name = torch.cuda.get_device_name(0)
-        return f'GPU: {name}'
+    providers = ort.get_available_providers()
+    if 'CUDAExecutionProvider' in providers:
+        return 'GPU: CUDA (ONNX Detected)'
     else:
         return 'CPU (Медленно)'
     

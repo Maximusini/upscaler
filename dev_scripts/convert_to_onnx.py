@@ -3,7 +3,7 @@ import sys
 import os
 
 sys.path.append(os.getcwd())
-from src.core.model_arch import RRDBNet
+from dev_scripts.model_arch import RRDBNet
 
 model = RRDBNet(num_in_ch=3, 
                 num_out_ch=3, 

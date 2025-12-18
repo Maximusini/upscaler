@@ -2,7 +2,6 @@ import numpy as np
 import cv2
 import onnxruntime as ort
 
-
 class Upscaler:
     def __init__(self, model_path:str, scale:int = 4):
         self.scale = scale

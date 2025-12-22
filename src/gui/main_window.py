@@ -3,7 +3,7 @@ import shutil
 import tempfile
 from PySide6.QtWidgets import QWidget, QMainWindow, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, \
     QComboBox, QFileDialog, QProgressBar, QListWidget, QListWidgetItem, QCheckBox, QGroupBox, \
-    QTabWidget
+    QTabWidget, QStyle
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QPixmap
 from src.core.config import ConfigManager
@@ -182,15 +182,20 @@ class MainWindow(QMainWindow):
                 item = QListWidgetItem(file_name)
                 item.setData(Qt.UserRole, file_path)
                 self.file_list.addItem(item)
-                self.file_list.setCurrentItem(item)
-                self.on_file_clicked(item)
+                
+                if self.file_list.count() == 1:
+                    self.file_list.setCurrentItem(item)
+                    self.on_file_clicked(item)
                 
                 widget = QWidget()
                 layout = QHBoxLayout(widget)
                 layout.setContentsMargins(5, 2, 5, 2)
                 label = QLabel(os.path.basename(file_path))
-                btn_del = QPushButton('X')
-                btn_del.setFixedSize(20, 20)
+                btn_del = QPushButton()
+                btn_del.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_TitleBarCloseButton))
+                btn_del.setFlat(True)
+                btn_del.setFixedSize(24, 24)
+                btn_del.setStyleSheet('QPushButton:hover { background-color: red; border-radius: 4px; }')
                 layout.addWidget(label)
                 layout.addStretch()
                 layout.addWidget(btn_del)

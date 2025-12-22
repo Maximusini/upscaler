@@ -11,14 +11,14 @@ class Upscaler:
         
         self.vram_bytes = get_vram_limit()
         self.pixel_limit = self.vram_bytes / 30000
+        
+        print(f'VRAM: {self.vram_bytes / 1024**3:.2f} GB. Pixel limit: {int(self.pixel_limit)}')
+
         options = ort.SessionOptions()
-    # Включаем агрессивное повторное использование памяти
         options.enable_mem_pattern = True
         options.execution_mode = ort.ExecutionMode.ORT_SEQUENTIAL
-        # Уровень оптимизации графа
         options.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
-        print(f'VRAM: {self.vram_bytes / 1024**3:.2f} GB. Pixel limit: {int(self.pixel_limit)}')
-        
+             
         self.session = ort.InferenceSession(model_path, sess_options=options, providers = ['DmlExecutionProvider', 'CPUExecutionProvider'])
         
         input_type = self.session.get_inputs()[0].type

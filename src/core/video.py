@@ -17,10 +17,15 @@ class VideoUpscaler:
         final_height = height * self.upscaler.scale
         final_width = width * self.upscaler.scale
         
+        output_dir = os.path.dirname(output_path)
+        temp_silent = os.path.join(output_dir, 'temp_silent.mp4')
+        
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-        out = cv2.VideoWriter('temp_silent.mp4', fourcc, fps, (final_width, final_height))
+        out = cv2.VideoWriter(temp_silent, fourcc, fps, (final_width, final_height))
         
         current_frame = 0
+        is_stopped = False
+        
         while video.isOpened():
             ret, frame = video.read()
             
@@ -31,6 +36,7 @@ class VideoUpscaler:
             if progress != None:
                 percent = int(current_frame / frame_count * 100)
                 if progress(percent) is False:
+                    is_stopped = True
                     break
                 
             if not ret:
@@ -40,8 +46,10 @@ class VideoUpscaler:
 
         video.release()
         out.release()
-                
-        merge_audio('temp_silent.mp4', input_path, output_path)
         
-        os.remove('temp_silent.mp4')
+        if not is_stopped:     
+            merge_audio(temp_silent, input_path, output_path)
+
+        if os.path.exists(temp_silent):
+            os.remove(temp_silent)
         

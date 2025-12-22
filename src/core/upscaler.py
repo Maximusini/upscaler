@@ -1,6 +1,7 @@
 import numpy as np
 import math
 import cv2
+import gc
 import onnxruntime as ort
 from src.core.system_utils import get_vram_limit
 
@@ -9,10 +10,16 @@ class Upscaler:
         self.scale = scale
         
         self.vram_bytes = get_vram_limit()
-        self.pixel_limit = self.vram_bytes / 20000
+        self.pixel_limit = self.vram_bytes / 30000
+        options = ort.SessionOptions()
+    # Включаем агрессивное повторное использование памяти
+        options.enable_mem_pattern = True
+        options.execution_mode = ort.ExecutionMode.ORT_SEQUENTIAL
+        # Уровень оптимизации графа
+        options.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
         print(f'VRAM: {self.vram_bytes / 1024**3:.2f} GB. Pixel limit: {int(self.pixel_limit)}')
         
-        self.session = ort.InferenceSession(model_path, providers = ['DmlExecutionProvider', 'CPUExecutionProvider'])
+        self.session = ort.InferenceSession(model_path, sess_options=options, providers = ['DmlExecutionProvider', 'CPUExecutionProvider'])
         
         input_type = self.session.get_inputs()[0].type
         self.is_fp16 = 'float16' in input_type
@@ -57,9 +64,10 @@ class Upscaler:
                 
                 patch = img_padded[y_start:y_end, x_start:x_end, :]
                 
-                patch_blob = patch.astype(np.float32) / 255.0
                 if self.is_fp16:
-                    patch_blob = patch_blob.astype(np.float16)
+                    patch_blob = (patch.astype(np.float16) / 255.0)
+                else:
+                    patch_blob = (patch.astype(np.float32) / 255.0)
                 
                 patch_blob = np.transpose(patch_blob, (2, 0, 1))
                 patch_blob = np.expand_dims(patch_blob, axis=0)
@@ -93,5 +101,5 @@ class Upscaler:
                 
         final_h = h * self.scale
         final_w = w * self.scale
-
+        gc.collect()
         return img_up[:final_h, :final_w, :]

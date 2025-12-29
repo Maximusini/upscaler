@@ -32,7 +32,8 @@ class Upscaler:
         if tile_size == 0:
             total_pixels = h * w
             if total_pixels <= self.pixel_limit:
-                actual_tile_size = max(h, w) + tile_pad * 2
+                raw_size = max(h, w) + tile_pad * 2
+                actual_tile_size = raw_size + (raw_size % 2)
             else:
                 safe_pixels = self.pixel_limit
                 side = int(math.sqrt(safe_pixels)) # Сторона квадрата, площадь которого равна лимиту

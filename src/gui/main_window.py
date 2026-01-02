@@ -374,11 +374,15 @@ class MainWindow(QMainWindow):
             
             if self.temp_output_path and os.path.isdir(self.temp_output_path):
                 file_name = os.path.splitext(os.path.basename(file_path))[0]
-                expected_name = f'{file_name}_upscaled{ext}'
-                expected_path = os.path.join(self.temp_output_path, expected_name)
+                possible_exts = [ext, '.png', '.jpg', '.jpeg', '.webp']
                 
-                if os.path.exists(expected_path):
-                    output_to_show = expected_path
+                for ext in possible_exts:
+                    expected_name = f'{file_name}_upscaled{ext}'
+                    expected_path = os.path.join(self.temp_output_path, expected_name)
+                
+                    if os.path.exists(expected_path):
+                        output_to_show = expected_path
+                        break
             
             elif self.temp_output_path and os.path.isfile(self.temp_output_path):
                 pass

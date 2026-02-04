@@ -35,13 +35,21 @@ class UpscaleWorker(QThread):
         upscaler = Upscaler(model_path=model_path, scale=scale)
         self.log_signal.emit('Обработка...')
         
+        total_files = len(self.input_files)
+        
         for i, file_path in enumerate(self.input_files):
             src_ext = os.path.splitext(file_path)[1].lower()
             if self.isInterruptionRequested():
                 break
             
-            self.log_signal.emit(f'Файл {i + 1} из {len(self.input_files)}: {os.path.basename(file_path)}')
-            current_progress = int((i / len(self.input_files)) * 100)
+            self.log_signal.emit(f'Файл {i + 1} из {total_files}: {os.path.basename(file_path)}')
+            
+            def current_video_progress(percent):
+                global_progress = int(((i + percent / 100.0) / total_files) * 100)
+                self.progress_signal.emit(global_progress)
+                return not self.isInterruptionRequested()
+            
+            current_progress = int((i / total_files) * 100)
             self.progress_signal.emit(current_progress)
             
             if self.save_format == 'Auto':
@@ -61,7 +69,7 @@ class UpscaleWorker(QThread):
                 current_output_path = os.path.splitext(current_output)[0]
                 final_video_path  = f'{current_output_path}{src_ext}'
                 video_upscaler = VideoUpscaler(upscaler)
-                video_upscaler.process_video(file_path, final_video_path, self.report_progress)
+                video_upscaler.process_video(file_path, final_video_path, current_video_progress)
                 
             elif src_ext.lower() in ['.jpg', '.jpeg', '.png', '.bmp', '.webp']:
                 img = read_image(file_path)

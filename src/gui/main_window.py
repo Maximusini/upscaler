@@ -337,6 +337,12 @@ class MainWindow(QMainWindow):
                 self.label_status.setText('Файл успешно сохранён')
             
     def closeEvent(self, event):
+        if hasattr(self, 'worker') and self.worker.isRunning():
+            self.worker.requestInterruption()
+            self.worker.wait(2000)
+            if self.worker.isRunning():
+                self.worker.terminate()
+                
         if self.temp_output_path and os.path.exists(self.temp_output_path):
             if os.path.isdir(self.temp_output_path):
                 shutil.rmtree(self.temp_output_path)

@@ -35,7 +35,7 @@ class ComparisonWidget(QWidget):
             return
         
         painter = QPainter(self)
-        painter.setRenderHint(QPainter.Antialiasing)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         
         zoomed_rect = self.get_final_rect()
         visual_slider_x = int(zoomed_rect.left() + zoomed_rect.width() * self.slider_pos)
@@ -52,10 +52,10 @@ class ComparisonWidget(QWidget):
                 painter.drawPixmap(zoomed_rect, self.before)
                 painter.setClipping(False)
                 
-            painter.setPen(QPen(Qt.white, 1))
+            painter.setPen(QPen(Qt.GlobalColor.white, 1))
             painter.drawLine(visual_slider_x, zoomed_rect.top(), visual_slider_x, zoomed_rect.bottom())
             
-            painter.setBrush(Qt.white)
+            painter.setBrush(Qt.GlobalColor.white)
             painter.setPen('grey')
             center_y = zoomed_rect.center().y()
             rect_x = visual_slider_x - 7
@@ -71,11 +71,11 @@ class ComparisonWidget(QWidget):
             visual_slider_x = int(zoomed_rect.left() + zoomed_rect.width() * self.slider_pos)
         
             if abs(visual_slider_x - x) < 15:
-                self.setCursor(Qt.SplitHCursor)
+                self.setCursor(Qt.CursorShape.SplitHCursor)
             elif self.is_panning:
-                self.setCursor(Qt.ClosedHandCursor)
+                self.setCursor(Qt.CursorShape.ClosedHandCursor)
             else:
-                self.setCursor(Qt.ArrowCursor)
+                self.setCursor(Qt.CursorShape.ArrowCursor)
             
             if self.is_dragging:
                 pos = (event.x() - zoomed_rect.left()) / zoomed_rect.width()
@@ -89,7 +89,7 @@ class ComparisonWidget(QWidget):
                 self.constrain_offset()
                 self.update()
             else:
-                self.setCursor(Qt.ArrowCursor)
+                self.setCursor(Qt.CursorShape.ArrowCursor)
         
     def mousePressEvent(self, event):
         if self.before:

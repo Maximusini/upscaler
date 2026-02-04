@@ -20,9 +20,9 @@ class MainWindow(QMainWindow):
         
         self.setup_ui()
         
-        self.input_path = None
-        self.output_path = None
-        self.temp_output_path = None
+        self.input_path = ""
+        self.output_path = ""
+        self.temp_output_path = ""
         
         system_temp = tempfile.gettempdir()
         self.work_dir = os.path.join(system_temp, 'NeuralUpscaler_work')
@@ -177,10 +177,10 @@ class MainWindow(QMainWindow):
         if file_path:
             self.btn_save.setEnabled(False)
             self.input_path = file_path
-            if ext in self.VIDEO_EXTS | self.IMAGE_EXTS:
+            if ext in (self.VIDEO_EXTS | self.IMAGE_EXTS):
                 file_name = os.path.basename(file_path)
                 item = QListWidgetItem(file_name)
-                item.setData(Qt.UserRole, file_path)
+                item.setData(Qt.ItemDataRole.UserRole, file_path)
                 self.file_list.addItem(item)
                 
                 if self.file_list.count() == 1:
@@ -211,7 +211,7 @@ class MainWindow(QMainWindow):
         self.file_list.takeItem(row)
         
         if self.file_list.count() == 0:
-            self.image.set_images("", None)
+            self.image.set_images("", "")
             self.btn_start.setEnabled(False)
             self.label_status.setText("Список пуст")
                 
@@ -246,7 +246,7 @@ class MainWindow(QMainWindow):
         if self.check_batch.isChecked():
             for i in range(self.file_list.count()):
                 item = self.file_list.item(i)
-                path = item.data(Qt.UserRole)
+                path = item.data(Qt.ItemDataRole.UserRole)
                 files_to_process.append(path)
                 
             if not files_to_process:
@@ -330,7 +330,7 @@ class MainWindow(QMainWindow):
             
             suggested_path = f'{root}_upscaled{result_ext}'
 
-            file_path, _ = QFileDialog.getSaveFileName(self, 'Сохранить результат', suggested_path, 'Images (*.png *.jpg *.webp);')
+            file_path, _ = QFileDialog.getSaveFileName(self, 'Сохранить результат', suggested_path, 'Images (*.png *.jpg *.webp)')
             
             if file_path:
                 shutil.copy2(self.temp_output_path, file_path)
@@ -351,7 +351,7 @@ class MainWindow(QMainWindow):
         event.accept()
 
     def on_file_clicked(self, item):
-        file_path = item.data(Qt.UserRole)
+        file_path = item.data(Qt.ItemDataRole.UserRole)
         self.input_path = file_path
         
         if self.temp_output_path and os.path.isdir(self.temp_output_path):
@@ -364,7 +364,7 @@ class MainWindow(QMainWindow):
         if ext in self.VIDEO_EXTS:
             self.label_status.setText(f'Выбрано видео: {os.path.basename(self.input_path)}. Предпросмотр не доступен.')
             self.btn_start.setEnabled(True)
-            self.image.set_images("", None) 
+            self.image.set_images("", "") 
             
         elif ext in self.IMAGE_EXTS:
             self.label_status.setText(f'Выбрано изображение: {os.path.basename(file_path)}.')
@@ -387,7 +387,7 @@ class MainWindow(QMainWindow):
             elif self.temp_output_path and os.path.isfile(self.temp_output_path):
                 pass
             
-            self.image.set_images(file_path, output_to_show)
+            self.image.set_images(file_path, output_to_show if output_to_show is not None else "")
             
     def apply_settings(self):
         if 'model' in self.settings:

@@ -65,8 +65,11 @@ class UpscaleWorker(QThread):
                 
             elif src_ext.lower() in ['.jpg', '.jpeg', '.png', '.bmp', '.webp']:
                 img = read_image(file_path)
-                res = upscaler.process_image(img)
-                save_image(current_output, res)
+                if img is not None:
+                    res = upscaler.process_image(img)
+                    save_image(current_output, res)
+                else:
+                    self.log_signal.emit(f"Ошибка: Не удалось прочитать изображение {os.path.basename(file_path)}")
                 
         self.progress_signal.emit(100)
         

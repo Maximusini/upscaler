@@ -1,7 +1,11 @@
 import subprocess
 import logging
+import os
 
 def merge_audio(video_no_audio:str, video_with_audio:str, output_path:str):
+    """
+    Накладывает аудиодорожку из video_with_audio на видео из video_no_audio и сохраняет в output_path.
+    """
     try:
         cmd = [
             'ffmpeg', 
@@ -20,5 +24,44 @@ def merge_audio(video_no_audio:str, video_with_audio:str, output_path:str):
             subprocess.run([
                 'ffmpeg', '-i', video_no_audio, '-c', 'copy', '-y', output_path
             ], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        except Exception as e:
+            logging.error(f'Critical ffmpeg error: {e}')
+            
+def merge_frames_to_video(frames_dir:str, input_path:str, output_path:str, fps:float):
+    """
+    Собирает видео из кадров в frames_dir.
+    Пытается взять аудио из input_path и наложить на итоговое видео.
+    """
+    abs_frames_dir = os.path.abspath(frames_dir).replace('\\', '/')
+    input_pattern = f'{abs_frames_dir}/frame_%08d.png'
+    
+    base_args = [
+        '-c:v', 'libx264',
+        '-pix_fmt', 'yuv420p',
+        '-preset', 'medium',
+        '-crf', '23',
+        '-y', output_path
+    ]
+    
+    try:
+        cmd = [
+            'ffmpeg', 
+            '-framerate', str(fps),
+            '-i', input_pattern,
+            '-i', input_path,
+            '-map', '0:v',
+            '-map', '1:a',
+            '-c:a', 'copy'
+        ] + base_args
+        subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+    except subprocess.CalledProcessError:
+        logging.warning('Failed to merge frames to video.')
+        try:
+            cmd = [
+                'ffmpeg', 
+                '-framerate', str(fps),
+                '-i', input_pattern
+            ] + base_args
+            subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
         except Exception as e:
             logging.error(f'Critical ffmpeg error: {e}')

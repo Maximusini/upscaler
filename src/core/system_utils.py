@@ -72,7 +72,7 @@ def get_vram_limit():
         memory = psutil.virtual_memory()
         available_ram = memory.available
         
-        target_limit = int(available_ram * 0.8)
+        target_limit = int(available_ram * 0.6)
         logging.info(f"Using RAM-based limit strategy. Free RAM: {available_ram / GB_TO_BYTES:.2f} GB. Limit set to: {target_limit / GB_TO_BYTES:.2f} GB")
         
         return target_limit

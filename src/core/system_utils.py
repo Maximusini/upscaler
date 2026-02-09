@@ -61,7 +61,7 @@ def get_vram_limit():
             gpus = GPUtil.getGPUs()
             if gpus:
                 total_vram = gpus[0].memoryTotal * 1024 * 1024
-                safe_limit = int(total_vram * 0.9)
+                safe_limit = int(total_vram * 0.8)
                 
                 logging.info(f'NVIDIA GPU detected: {gpus[0].name}, VRAM: {total_vram / GB_TO_BYTES:.2f} GB, Safe limit: {safe_limit / GB_TO_BYTES:.2f} GB')
                 return safe_limit

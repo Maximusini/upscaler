@@ -277,7 +277,7 @@ class MainWindow(QMainWindow):
         
         model_choice = self.combo_model.currentText()
         
-        self.worker = UpscaleWorker(files_to_process, model_choice, self.temp_output_path, save_format)
+        self.worker = UpscaleWorker(files_to_process, model_choice, self.temp_output_path, save_format, self.work_dir)
         
         self.worker.log_signal.connect(self.update_status)
         self.worker.finished_signal.connect(self.process_finished)

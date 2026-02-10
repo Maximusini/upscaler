@@ -9,8 +9,8 @@ from src.core.ffmpeg_utils import merge_frames_to_video
 class VideoUpscaleWorker:
     def __init__(self, upscaler):
         self.upscaler = upscaler
-        self.read_queue = queue.Queue(maxsize=30)
-        self.write_queue = queue.Queue(maxsize=30)
+        self.read_queue = queue.Queue(maxsize=45)
+        self.write_queue = queue.Queue(maxsize=45)
         self.stop_event = threading.Event()
         
     def reader_thread(self, video_path):
@@ -31,7 +31,13 @@ class VideoUpscaleWorker:
                     continue
 
         video.release()
-        self.read_queue.put(None)
+        
+        while not self.stop_event.is_set():
+            try:
+                self.read_queue.put(None, timeout=0.1)
+                break
+            except queue.Full:
+                continue
         
     def processor_thread(self):
         while not self.stop_event.is_set():
@@ -41,11 +47,18 @@ class VideoUpscaleWorker:
                 continue
             
             if item is None:
-                self.write_queue.put(None)
+                while not self.stop_event.is_set():
+                    try:
+                        self.read_queue.put(None, timeout=0.1)
+                    except queue.Full:
+                        continue
                 break
             
             i, frame = item
             try:
+                if self.stop_event.is_set():
+                    break
+                
                 upscaled_frame = self.upscaler.process_image(frame)
                 
                 while not self.stop_event.is_set():
@@ -78,6 +91,9 @@ class VideoUpscaleWorker:
             if progress and total_frames > 0:
                 percent = int((frames_written / total_frames) * 100)
                 progress(percent)
+                
+                if progress(percent) is False:
+                    self.stop_event.set()
     
     def process_video(self, input_path, output_path, work_dir, progress=None):
         self.stop_event.clear()
@@ -119,6 +135,8 @@ class VideoUpscaleWorker:
             merge_frames_to_video(frames_dir, input_path, output_path, fps)
             
             logging.info('Video assembly completed. Merging audio...')
+            return True
+            
         except Exception as e:
             logging.error(f'Error during video processing: {e}')
             self.stop_event.set()

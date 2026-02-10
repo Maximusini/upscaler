@@ -2,6 +2,7 @@ import sys
 import os
 import onnxruntime as ort
 from PySide6.QtGui import QImageReader
+import logging
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.dirname(current_dir)
@@ -10,6 +11,15 @@ sys.path.append(project_root)
 from PySide6.QtWidgets import QApplication
 from src.gui.main_window import MainWindow
 from qt_material import apply_stylesheet
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s: %(module)s - %(message)s',
+    handlers=[
+        logging.FileHandler('app.log', mode='w', encoding='utf-8'),
+        logging.StreamHandler()
+    ]
+)
 
 
 if __name__ == '__main__':

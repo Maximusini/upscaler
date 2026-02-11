@@ -33,7 +33,7 @@ def merge_frames_to_video(frames_dir:str, input_path:str, output_path:str, fps:f
     Пытается взять аудио из input_path и наложить на итоговое видео.
     """
     abs_frames_dir = os.path.abspath(frames_dir).replace('\\', '/')
-    input_pattern = f'{abs_frames_dir}/frame_%08d.png'
+    input_pattern = f'{abs_frames_dir}/frame_%08d.jpg'
     
     base_args = [
         '-c:v', 'libx264',

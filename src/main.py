@@ -15,12 +15,12 @@ from qt_material import apply_stylesheet
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s: %(module)s - %(message)s',
+    datefmt='%H:%M:%S',
     handlers=[
         logging.FileHandler('app.log', mode='w', encoding='utf-8'),
         logging.StreamHandler()
     ]
 )
-
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)

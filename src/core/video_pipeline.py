@@ -83,7 +83,7 @@ class VideoUpscaleWorker:
                 break
             
             i, frame = item
-            filename = f'frame_{i:08d}.png'
+            filename = f'frame_{i:08d}.jpg'
             path = os.path.join(temp_dir, filename)
             cv2.imwrite(path, frame)
             frames_written += 1

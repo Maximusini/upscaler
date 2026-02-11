@@ -63,7 +63,15 @@ class Upscaler:
         h, w, c = img.shape
         
         if h <= self.tile_size and w <= self.tile_size:
-            return self.process_patch(img)
+            pad_h = h % 2
+            pad_w = w % 2
+            
+            if pad_h != 0 or pad_w != 0:
+                img = cv2.copyMakeBorder(img, 0, pad_h, 0, pad_w, cv2.BORDER_REFLECT_101)
+            
+            res = self.process_patch(img)
+            
+            return res[:h*self.scale, :w*self.scale, :]
         
         actual_tile_size = self.tile_size
         

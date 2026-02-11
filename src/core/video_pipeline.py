@@ -49,7 +49,8 @@ class VideoUpscaleWorker:
             if item is None:
                 while not self.stop_event.is_set():
                     try:
-                        self.read_queue.put(None, timeout=0.1)
+                        self.write_queue.put(None, timeout=0.1)
+                        break
                     except queue.Full:
                         continue
                 break
@@ -90,7 +91,6 @@ class VideoUpscaleWorker:
             
             if progress and total_frames > 0:
                 percent = int((frames_written / total_frames) * 100)
-                progress(percent)
                 
                 if progress(percent) is False:
                     self.stop_event.set()

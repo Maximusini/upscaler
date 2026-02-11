@@ -1,14 +1,16 @@
+import logging
 import os
 import shutil
 import tempfile
 from PySide6.QtWidgets import QWidget, QMainWindow, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, \
     QComboBox, QFileDialog, QProgressBar, QListWidget, QListWidgetItem, QCheckBox, QGroupBox, \
-    QTabWidget, QStyle
+    QTabWidget, QStyle, QPlainTextEdit
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QPixmap
 from src.core.config import ConfigManager
 from src.gui.worker import UpscaleWorker
 from src.gui.comparison_widget import ComparisonWidget
+from src.gui.log_handler import QtLogHandler
 from src.core.system_utils import get_gpu_info, check_ffmpeg
 
 class MainWindow(QMainWindow):
@@ -20,9 +22,9 @@ class MainWindow(QMainWindow):
         
         self.setup_ui()
         
-        self.input_path = ""
-        self.output_path = ""
-        self.temp_output_path = ""
+        self.input_path = ''
+        self.output_path = ''
+        self.temp_output_path = ''
         
         system_temp = tempfile.gettempdir()
         self.work_dir = os.path.join(system_temp, 'NeuralUpscaler_work')
@@ -30,6 +32,14 @@ class MainWindow(QMainWindow):
         self.config_manager = ConfigManager()
         self.settings = self.config_manager.load_config()
         self.apply_settings()
+        
+        log_handler = QtLogHandler()
+        log_handler.log_signal.connect(self.append_log_html)
+        
+        formatter = logging.Formatter('%(asctime)s - %(levelname)s: %(module)s - %(message)s', datefmt='%H:%M:%S')
+        log_handler.setFormatter(formatter)
+        
+        logging.getLogger().addHandler(log_handler)
     
     def setup_ui(self):
         self.setWindowTitle('Neural Upscaler')
@@ -52,7 +62,7 @@ class MainWindow(QMainWindow):
         controls_layout.addWidget(self.actions_group)
         
         self.label_status = QLabel('Готов к работе')
-        self.label_status.setStyleSheet("color: #888;")
+        self.label_status.setStyleSheet('color: #888;')
         controls_layout.addWidget(self.label_status)
         
         self.image = ComparisonWidget()
@@ -115,26 +125,49 @@ class MainWindow(QMainWindow):
 
         gpu_info = get_gpu_info()
         lbl_gpu = QLabel(gpu_info)
-        if "GPU" in gpu_info:
-            lbl_gpu.setStyleSheet("color: green; font-weight: bold;") # Зеленый
+        if 'GPU' in gpu_info:
+            lbl_gpu.setStyleSheet('color: green; font-weight: bold;') # Зеленый
         else:
-            lbl_gpu.setStyleSheet("color: red; font-weight: bold;") # Красный
+            lbl_gpu.setStyleSheet('color: red; font-weight: bold;') # Красный
 
         has_ffmpeg = check_ffmpeg()
-        ffmpeg_text = "FFmpeg: Установлен (Видео доступно)" if has_ffmpeg else "FFmpeg: Не найден (Только фото)"
+        ffmpeg_text = 'FFmpeg: Установлен (Видео доступно)' if has_ffmpeg else 'FFmpeg: Не найден (Только фото)'
         lbl_ffmpeg = QLabel(ffmpeg_text)
-        color = "green" if has_ffmpeg else "red"
-        lbl_ffmpeg.setStyleSheet(f"color: {color}; font-weight: bold;")
+        color = 'green' if has_ffmpeg else 'red'
+        lbl_ffmpeg.setStyleSheet(f'color: {color}; font-weight: bold;')
 
-        lbl_ver = QLabel("Версия: v1.0.0 Release")
-        lbl_ver.setStyleSheet("color: #888; margin-top: 20px;")
+        lbl_ver = QLabel('Версия: v1.0.0 Release')
+        lbl_ver.setStyleSheet('color: #888; margin-top: 20px;')
+        
+        lbl_logs = QLabel('Логи:')
+        lbl_logs.setStyleSheet('font-weight: bold; font-size: 14px; margin-top: 15px;')
+        
+        self.log_text = QPlainTextEdit()
+        self.log_text.setReadOnly(True)
+        
+        font = self.log_text.font()
+        font.setFamily('Consolas')
+        font.setPointSize(10)
+        self.log_text.setFont(font)
+        
+        self.log_text.setStyleSheet("""
+            QPlainTextEdit {
+                background-color: #1e1e1e;
+                color: #d4d4d4;
+                border: 1px solid #333;
+                border-radius: 5px;
+                padding: 5px;
+            }
+        """)
         
         layout.addWidget(lbl_gpu)
         layout.addWidget(lbl_ffmpeg)
         layout.addWidget(lbl_ver)
-        layout.addStretch()
+        layout.addWidget(lbl_logs)
+        layout.addWidget(self.log_text)
+        # layout.addStretch()
         
-        self.tabs.addTab(tab, "Система")
+        self.tabs.addTab(tab, 'Система')
 
     def create_actions_group(self):
         self.actions_group = QGroupBox('Управление')
@@ -211,9 +244,9 @@ class MainWindow(QMainWindow):
         self.file_list.takeItem(row)
         
         if self.file_list.count() == 0:
-            self.image.set_images("", "")
+            self.image.set_images('', '')
             self.btn_start.setEnabled(False)
-            self.label_status.setText("Список пуст")
+            self.label_status.setText('Список пуст')
                 
     def select_file(self):
         start_dir = self.settings.get('last_path', '')
@@ -370,7 +403,7 @@ class MainWindow(QMainWindow):
         if ext in self.VIDEO_EXTS:
             self.label_status.setText(f'Выбрано видео: {os.path.basename(self.input_path)}. Предпросмотр не доступен.')
             self.btn_start.setEnabled(True)
-            self.image.set_images("", "") 
+            self.image.set_images('', '') 
             
         elif ext in self.IMAGE_EXTS:
             self.label_status.setText(f'Выбрано изображение: {os.path.basename(file_path)}.')
@@ -393,10 +426,44 @@ class MainWindow(QMainWindow):
             elif self.temp_output_path and os.path.isfile(self.temp_output_path):
                 pass
             
-            self.image.set_images(file_path, output_to_show if output_to_show is not None else "")
+            self.image.set_images(file_path, output_to_show if output_to_show is not None else '')
             
     def apply_settings(self):
         if 'model' in self.settings:
             self.combo_model.setCurrentText(self.settings['model'])
         if 'format' in self.settings:
             self.combo_format.setCurrentText(self.settings['format'])
+            
+    def append_log_html(self, text):
+        """
+        Раскрашивает логи в зависимости от уровня.
+        """
+        COLOR_TIME = '#888888'
+        COLOR_INFO = "#54ac4c"
+        COLOR_WARN = '#ffcc00'
+        COLOR_ERR  = '#ca2e3b'
+        COLOR_TEXT = '#abb2bf'
+
+        if 'ERROR' in text or 'CRITICAL' in text:
+            level_color = COLOR_ERR
+        elif 'WARNING' in text:
+            level_color = COLOR_WARN
+        else:
+            level_color = COLOR_INFO
+
+        try:
+            parts = text.split(' - ', 1)
+            if len(parts) == 2:
+                timestamp = parts[0]
+                rest = parts[1]
+                
+                html = f'<span style="color:{COLOR_TIME}">{timestamp} - </span>' \
+                       f'<span style="color:{level_color}">{rest}</span>'
+            else:
+                # Если формат нестандартный
+                html = f'<span style="color:{level_color}">{text}</span>'
+                
+        except Exception:
+            html = f'<span style="color:{COLOR_TEXT}">{text}</span>'
+
+        self.log_text.appendHtml(html)

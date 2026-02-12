@@ -110,8 +110,13 @@ class UpscaleWorker(QThread):
                 try:
                     img = read_image(file_path)
                     if img is not None:
-                        res = upscaler.process_image(img)
-                        save_image(current_file_output, res)
+                        try:
+                            res = upscaler.process_image(img, check_interrupt=self.isInterruptionRequested)
+                            save_image(current_file_output, res)
+                        except InterruptedError:
+                            self.log_signal.emit('Обработка изображения была остановлена пользователем.')
+                            break
+                        
                         self.progress_signal.emit(100)
                     else:
                         self.log_signal.emit(f'Не удалось прочитать изображение: {file_path}')

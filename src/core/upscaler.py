@@ -53,7 +53,7 @@ class Upscaler:
         
         logging.info(f'VRAM: {self.vram_bytes / 1024**3:.2f} GB. Pixel limit: {int(pixel_limit)}. Tile size: {self.tile_size}x{self.tile_size}')
     
-    def process_image(self, img:np.ndarray, tile_pad=10) -> np.ndarray:
+    def process_image(self, img:np.ndarray, tile_pad=10, check_interrupt=None) -> np.ndarray:
         """
         Основной метод для обработки изображения с тайлингом.
         - img: входное изображение в формате BGR (uint8).
@@ -98,6 +98,9 @@ class Upscaler:
                 
                 patch = img_padded[y_start:y_end, x_start:x_end, :]
                 
+                if check_interrupt and check_interrupt():
+                    raise InterruptedError('Stopped by user.')
+                
                 try:
                     chunk = self.process_patch(patch)
                 except Exception as e:
@@ -138,10 +141,14 @@ class Upscaler:
         img_blob = np.ascontiguousarray(img_blob)
             
         try:
-            result = self.session.run(None, {'input': img_blob})[0]
+            outputs = self.session.run(None, {'input': img_blob})
+            result = outputs[0]
         except Exception as e:
             logging.error(f'Error processing image: {e}')
             raise RuntimeError(f'Error processing image: {e}')
+        
+        if not isinstance(result, np.ndarray):
+            raise TypeError('Model output is not a numpy array.')
             
         result = result[0]
         result = np.clip(result, 0, 1)

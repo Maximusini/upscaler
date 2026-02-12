@@ -27,7 +27,7 @@ class MainWindow(QMainWindow):
         self.temp_output_path = ''
         
         system_temp = tempfile.gettempdir()
-        self.work_dir = os.path.join(system_temp, 'NeuralUpscaler_work')
+        self.work_dir = os.path.join(system_temp, f'NeuralUpscaler_work_{os.getpid()}')
         
         self.config_manager = ConfigManager()
         self.settings = self.config_manager.load_config()

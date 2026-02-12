@@ -9,8 +9,8 @@ from src.core.ffmpeg_utils import merge_frames_to_video
 class VideoUpscaleWorker:
     def __init__(self, upscaler):
         self.upscaler = upscaler
-        self.read_queue = queue.Queue(maxsize=45)
-        self.write_queue = queue.Queue(maxsize=45)
+        self.read_queue = queue.Queue(maxsize=5)
+        self.write_queue = queue.Queue(maxsize=5)
         self.stop_event = threading.Event()
         
     def reader_thread(self, video_path):

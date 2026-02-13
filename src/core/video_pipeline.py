@@ -4,7 +4,7 @@ import cv2
 import os
 import shutil
 import logging
-from src.core.ffmpeg_utils import merge_frames_to_video
+from src.core.ffmpeg_utils import start_ffmpeg_process
 
 class VideoUpscaleWorker:
     def __init__(self, upscaler):
@@ -57,10 +57,7 @@ class VideoUpscaleWorker:
             
             i, frame = item
             try:
-                if self.stop_event.is_set():
-                    break
-                
-                upscaled_frame = self.upscaler.process_image(frame)
+                upscaled_frame = self.upscaler.process_image(frame, check_interrupt=self.stop_event.is_set)
                 
                 while not self.stop_event.is_set():
                     try:
@@ -71,52 +68,60 @@ class VideoUpscaleWorker:
             except Exception as e:
                 logging.error(f'Error processing frame {i}: {e}')
             
-    def writer_thread(self, temp_dir, total_frames, progress):
+    def writer_thread(self, process, total_frames, progress):
         frames_written = 0
-        
-        while not self.stop_event.is_set():
-            try:
-                item = self.write_queue.get(timeout=0.1)
-            except queue.Empty:
-                continue
-            
-            if item is None:
-                break
-            
-            i, frame = item
-            filename = f'frame_{i:08d}.jpg'
-            path = os.path.join(temp_dir, filename)
-            cv2.imwrite(path, frame)
-            frames_written += 1
-            
-            if progress and total_frames > 0:
-                percent = int((frames_written / total_frames) * 100)
+        try:
+            while not self.stop_event.is_set():
+                try:
+                    item = self.write_queue.get(timeout=0.1)
+                except queue.Empty:
+                    continue
                 
-                if progress(percent) is False:
+                if item is None:
+                    break
+                
+                _, frame = item
+                
+                try:
+                    process.stdin.write(frame.tobytes())
+                    process.stdin.flush()
+                    frames_written += 1
+
+                    if progress and total_frames > 0:
+                        percent = int((frames_written / total_frames) * 100)
+                        
+                        if progress(percent) is False:
+                            self.stop_event.set()
+                except (BrokenPipeError, IOError) as e:
+                    logging.error(f'FFmpeg process ended unexpectedly: {e}')
                     self.stop_event.set()
-    
+                    break
+        finally:
+            if process.stdin:
+                process.stdin.close()
+                
     def process_video(self, input_path, output_path, work_dir, progress=None):
         self.stop_event.clear()
         
-        video_name = os.path.splitext(os.path.basename(input_path))[0]
-        frames_dir = os.path.join(work_dir, f'{video_name}_frames')
         
-        if os.path.exists(frames_dir):
-            shutil.rmtree(frames_dir)
-        os.makedirs(frames_dir, exist_ok=True)
+        video = cv2.VideoCapture(input_path)
+        total_frames = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
+        fps = video.get(cv2.CAP_PROP_FPS)
+        w = int(video.get(cv2.CAP_PROP_FRAME_WIDTH)) * self.upscaler.scale
+        h = int(video.get(cv2.CAP_PROP_FRAME_HEIGHT)) * self.upscaler.scale
+        video.release()
         
+        logging.info(f'Starting pipeline. Output: {w}x{h}, {fps} fps')
+        ffmpeg_process = start_ffmpeg_process(output_path, fps, w, h, input_source=input_path)
+        
+        if ffmpeg_process is None:
+            logging.error('Failed to start FFmpeg process.')
+            return False
+            
         try:
-            video = cv2.VideoCapture(input_path)
-            total_frames = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
-            fps = video.get(cv2.CAP_PROP_FPS)
-            video.release()
-            
-            if total_frames == 0:
-                logging.warning('Could not determine total frames. Progress bar might be inaccurate.')
-            
             thread_reader = threading.Thread(target=self.reader_thread, args=(input_path,))
             thread_processor = threading.Thread(target=self.processor_thread)
-            thread_writer = threading.Thread(target=self.writer_thread, args=(frames_dir, total_frames, progress))
+            thread_writer = threading.Thread(target=self.writer_thread, args=(ffmpeg_process, total_frames, progress))
             
             thread_reader.start()
             thread_processor.start()
@@ -126,22 +131,23 @@ class VideoUpscaleWorker:
             thread_processor.join()
             thread_writer.join()
             
+            stdout, stderr = ffmpeg_process.communicate()
+            
             if self.stop_event.is_set():
                 logging.info('Video processing was stopped by user.')
                 return False
             
-            logging.info('All frames processed. Starting video assembly...')
+            if ffmpeg_process.returncode != 0:
+                logging.error(f'FFmpeg exited with error code {ffmpeg_process.returncode}')
+                return False
             
-            merge_frames_to_video(frames_dir, input_path, output_path, fps)
-            
-            logging.info('Video assembly completed. Merging audio...')
+            logging.info('Video processing completed successfully.')
             return True
             
         except Exception as e:
             logging.error(f'Error during video processing: {e}')
             self.stop_event.set()
+            
+            if ffmpeg_process:
+                ffmpeg_process.kill()
             raise e
-        finally:
-            if os.path.exists(frames_dir):
-                logging.info('Cleaning up temporary files...')
-                shutil.rmtree(frames_dir, ignore_errors=True)

@@ -44,7 +44,7 @@ poetry install
 
 **4. Запуск приложения**
 ```bash
-poetry run python upscaler/src/main.py
+poetry run python upscaler/src/neural_upscaler/main.py
 ```
 
 ---

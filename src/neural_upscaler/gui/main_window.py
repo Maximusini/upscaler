@@ -7,11 +7,11 @@ from PySide6.QtWidgets import QWidget, QMainWindow, QVBoxLayout, QHBoxLayout, QP
     QTabWidget, QStyle, QPlainTextEdit
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QPixmap
-from src.core.config import ConfigManager
-from src.gui.worker import UpscaleWorker
-from src.gui.comparison_widget import ComparisonWidget
-from src.gui.log_handler import QtLogHandler
-from src.core.system_utils import get_gpu_info, check_ffmpeg
+from neural_upscaler.config import ConfigManager
+from neural_upscaler.gui.utils.worker import UpscaleWorker
+from neural_upscaler.gui.widgets.comparison import ComparisonWidget
+from neural_upscaler.gui.utils.log_handler import QtLogHandler
+from neural_upscaler.utils.system import get_gpu_info, check_ffmpeg
 
 class MainWindow(QMainWindow):
     def __init__(self):

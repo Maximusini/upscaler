@@ -4,7 +4,7 @@ import cv2
 import os
 import shutil
 import logging
-from src.core.ffmpeg_utils import start_ffmpeg_process
+from neural_upscaler.engine.ffmpeg_wrapper import start_ffmpeg_process
 
 class VideoUpscaleWorker:
     def __init__(self, upscaler):

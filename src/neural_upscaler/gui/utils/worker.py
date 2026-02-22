@@ -1,10 +1,10 @@
 import logging
 import os
 from PySide6.QtCore import QThread, Signal
-from src.core.path_utils import get_resource_path
-from src.core.upscaler import Upscaler
-from src.core.video_pipeline import VideoUpscaleWorker
-from src.core.io_utils import read_image, save_image
+from neural_upscaler.utils.paths import get_resource_path
+from neural_upscaler.engine.upscaler import Upscaler
+from neural_upscaler.engine.video_processor import VideoUpscaleWorker
+from neural_upscaler.utils.file_io import read_image, save_image
 
 class UpscaleWorker(QThread):
     finished_signal = Signal()
@@ -32,10 +32,10 @@ class UpscaleWorker(QThread):
         self.log_signal.emit('Загрузка нейросети...')
         
         if self.model_choice == 'x2':
-            model_path = get_resource_path('weights/RealESRGAN_x2plus_fp16.onnx')
+            model_path = get_resource_path('resources/weights/RealESRGAN_x2plus_fp16.onnx')
             scale = 2
         else:
-            model_path = get_resource_path('weights/RealESRGAN_x4plus_fp16.onnx')
+            model_path = get_resource_path('resources/weights/RealESRGAN_x4plus_fp16.onnx')
             scale = 4
         try:
             upscaler = Upscaler(model_path=model_path, scale=scale)

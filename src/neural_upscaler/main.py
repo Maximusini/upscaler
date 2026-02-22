@@ -5,13 +5,14 @@ import logging
 from logging.handlers import RotatingFileHandler
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
-project_root = os.path.dirname(current_dir)
-sys.path.append(project_root)
+src_dir = os.path.dirname(current_dir)
+if src_dir not in sys.path:
+    sys.path.insert(0, src_dir)
 
 from PySide6.QtWidgets import QApplication
 from PySide6.QtGui import QImageReader
 from PySide6.QtCore import QStandardPaths
-from src.gui.main_window import MainWindow
+from neural_upscaler.gui.main_window import MainWindow
 from qt_material import apply_stylesheet
 
 def setup_logging():

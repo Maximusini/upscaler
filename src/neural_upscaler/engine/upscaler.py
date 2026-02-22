@@ -3,7 +3,7 @@ import math
 import cv2
 import gc
 import onnxruntime as ort
-from src.core.system_utils import get_vram_limit
+from neural_upscaler.utils.system import get_vram_limit
 import logging
 
 class Upscaler:

@@ -4,7 +4,7 @@ from PySide6.QtCore import QStandardPaths
 
 class ConfigManager():
     def __init__(self):
-        path = QStandardPaths.writableLocation(QStandardPaths.AppConfigLocation)
+        path = QStandardPaths.writableLocation(QStandardPaths.StandardLocation.AppConfigLocation)
         os.makedirs(path, exist_ok=True)
         self.config_path = os.path.join(path, 'settings.json')
     

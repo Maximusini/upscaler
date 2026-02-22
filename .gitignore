@@ -19,3 +19,6 @@ weights/
 build/
 dist/
 *.spec
+
+*.iss
+*.ipynb
